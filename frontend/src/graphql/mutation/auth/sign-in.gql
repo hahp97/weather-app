@@ -1,0 +1,12 @@
+mutation SignIn($identifier: String!, $password: String!) {
+  signIn(identifier: $identifier, password: $password) {
+    token
+    refreshToken
+    success
+    message
+    errors {
+      field
+      message
+    }
+  }
+}
