@@ -1,0 +1,29 @@
+// Type for location coordinates
+type Location {
+    latitude  Float
+    longitude Float
+    name      String @default("Changi Airport")
+}
+
+model WeatherReport {
+    id        String   @id @default(auto()) @map("_id") @db.ObjectId
+    title     String?
+    startTime DateTime
+    endTime   DateTime
+
+    // Computed/aggregated metrics
+    avgTemperature  Float?
+    avgPressure     Float?
+    avgHumidity     Float?
+    avgCloudCover   Float?
+    dataPointsCount Int?
+
+    // Link to user who generated the report
+    userId String? @db.ObjectId
+    user   User?   @relation(fields: [userId], references: [id])
+
+    createdAt DateTime @default(now())
+    updatedAt DateTime @updatedAt
+
+    @@map("weather_reports")
+}
