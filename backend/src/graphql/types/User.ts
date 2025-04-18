@@ -1,0 +1,116 @@
+export default `#graphql
+type User {
+  id: ID
+  email: String
+  username: String
+  name: String
+  
+  lastSignedInAt: DateTime
+  isEmailVerified: Boolean
+
+  createdAt: DateTime
+  updatedAt: DateTime
+  mobile: PhoneNumberObject
+  active: Boolean
+}
+
+enum UserOrder {
+  email_ASC
+  email_DESC
+  username_ASC
+  username_DESC
+  name_ASC
+  name_DESC
+  createdAt_ASC
+  createdAt_DESC
+  updatedAt_ASC
+  updatedAt_DESC
+}
+
+input UserFilter {
+  AND: [UserFilter!]
+  OR: [UserFilter!]
+  email_regex: String
+  username_regex: String
+  name_regex: String
+  createdAt_gte: DateTime
+  createdAt_lte: DateTime
+  mobile_is: FilterMobile
+}
+
+input FilterMobile {
+  code: String
+  country: String
+  number_contains: String
+}
+
+type Query {
+  users(first: Int, skip: Int, filter: UserFilter, orderBy: [UserOrder]): [User]
+  usersMeta(filter: UserFilter): ObjectMeta
+  user(id: ID!): User
+  me: User
+  resetPasswordInfo(code: String!): CommonResponse
+  createPasswordInfo(code:String!) : CommonResponse
+}
+
+input merchantRole {
+  role: String!
+  merchantId: String!
+  id: String
+}
+
+input CreateUserInput {
+  email: String!
+  username: String!
+  name: String!
+  superAdmin: Boolean
+  callbackUrl: String!
+  merchantRoles: [merchantRole]
+  mobile: PhoneNumberObject!
+  active: Boolean
+}
+
+input UpdateUserInput {
+  name: String
+  email: String
+  merchantRoles: [merchantRole]
+  merchantId: String
+  mobile: PhoneNumberObject
+  active: Boolean
+}
+
+type SignInResponse{
+  token: String
+  refreshToken: String
+  success:Boolean
+  message:String 
+  errors:[Error!]
+}
+
+input UpdateProfileInput{
+  name: String
+  currentPassword: String
+  newPassword: String
+  mobile: PhoneNumberObject
+}
+
+type Mutation {
+  createUser(input: CreateUserInput!): CommonResponse
+  updateUser(id: ID!, input: UpdateUserInput!): CommonResponse
+  signIn(identifier: String!, password: String!): SignInResponse
+  updateProfile(input: UpdateProfileInput!): CommonResponse
+  resendNewUser(id: ID!,callbackUrl: String!): CommonResponse
+  createPassword(code: String!, newPassword: String!): CommonResponse
+  forgotPassword(email: String!, callbackUrl: String!): CommonResponse
+  resetPassword(code: String!, newPassword: String!, callbackUrl: String!): CommonResponse
+}
+
+type UserSubscriptionPayload {
+  mutation: _ModelMutationType!
+  node: User
+}
+
+type Subscription {
+  User(filter: SubscriptionFilter, dataFilter: UserFilter): UserSubscriptionPayload
+}
+`;
