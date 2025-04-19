@@ -61,10 +61,10 @@ export default {
       try {
         const { prisma, authorizedUser } = context;
 
-        if (!authorizedUser || authorizedUser.role !== "ADMIN") {
+        if (!authorizedUser || !authorizedUser.superAdmin) {
           return {
             success: false,
-            message: "Unauthorized",
+            message: "Admin privileges required",
           };
         }
 

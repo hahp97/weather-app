@@ -19,28 +19,24 @@ export const createUserSchema = z.object({
 });
 
 export const signUpSchema = z.object({
-  email: z.string().email("Invalid email address"),
-  username: z.string().min(3, "Username must be at least 3 characters long"),
-  password: z
-    .string()
-    .min(6, "Password must be at least 6 characters long")
-    .refine((val) => !/\s/.test(val), "Password cannot contain spaces"),
+  email: z.string().email(),
+  username: z.string().min(3, "Username must be at least 3 characters"),
+  password: z.string().min(6, "Password must be at least 6 characters"),
   name: z.string().min(1, "Name is required"),
   mobile: z.object({
-    code: z.string().default("65"),
-    country: z.string().default("SG"),
+    code: z.string(),
+    country: z.string(),
     number: z.string().min(8, "Mobile number must be at least 8 digits long"),
   }),
 });
 
 export const updateUserSchema = z.object({
   email: z.string().email().optional(),
-  name: z.string().optional(),
-
+  name: z.string().min(1).optional(),
   mobile: z
     .object({
-      code: z.string().default("65"),
-      country: z.string().default("SG"),
+      code: z.string(),
+      country: z.string(),
       number: z.string().min(8, "Mobile number must be at least 8 digits long"),
     })
     .optional(),
@@ -54,8 +50,8 @@ export const resetPasswordSchema = z.object({
 });
 
 export const renewPasswordSchema = z.object({
-  newPassword: z.string().min(6, "Password must be at least 6 characters long"),
   code: z.string(),
+  newPassword: z.string().min(6),
 });
 
 export const resendNewUserSchema = z.object({
@@ -69,26 +65,34 @@ export const forgotPasswordSchema = z.object({
 });
 
 export const updateProfileSchema = z.object({
-  name: z.string().optional(),
+  name: z.string().min(1).optional(),
+  currentPassword: z.string().optional(),
+  newPassword: z.string().min(6).optional(),
   mobile: z
     .object({
-      code: z.string().default("65"),
-      country: z.string().default("SG"),
+      code: z.string(),
+      country: z.string(),
       number: z.string().min(8, "Mobile number must be at least 8 digits long"),
     })
-    .optional(),
-  currentPassword: z
-    .string()
-    .min(6, "Password must be at least 6 characters long")
-    .refine((val) => !/\s/.test(val), "Password cannot contain spaces")
-    .optional(),
-  newPassword: z
-    .string()
-    .min(6, "Password must be at least 6 characters long")
-    .refine((val) => !/\s/.test(val), "Password cannot contain spaces")
     .optional(),
 });
 
 export const verifyEmailSchema = z.object({
+  email: z.string().email(),
+});
+
+// New schemas for OTP operations
+export const sendOTPSchema = z.object({
   email: z.string().email("Invalid email address"),
+});
+
+export const verifyOTPSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+});
+
+export const resetPasswordWithOTPSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  otp: z.string().length(6, "OTP must be 6 digits"),
+  newPassword: z.string().min(6, "Password must be at least 6 characters"),
 });

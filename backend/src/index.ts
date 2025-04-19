@@ -5,6 +5,7 @@ import { createApolloServerMiddleware } from "@/graphql";
 import { WeatherDataFetcher } from "@/jobs/weatherDataFetcher";
 import { getConfigs } from "@/utils/configs";
 import { addTokens, addUser, limiter } from "@/utils/middleware";
+import { cleanupExpiredOTPs } from "@/utils/otp";
 import bodyParser from "body-parser";
 import cookieParser from "cookie-parser";
 import cors from "cors";
@@ -44,10 +45,21 @@ async function start() {
   const weatherDataFetcher = new WeatherDataFetcher(5); // Fetch every 5 minutes
   weatherDataFetcher.start();
 
+  // Setup OTP cleanup job (runs every 15 minutes)
+  const otpCleanupInterval = setInterval(
+    () => {
+      cleanupExpiredOTPs().catch((err) => {
+        console.error("Error cleaning up expired OTPs:", err);
+      });
+    },
+    15 * 60 * 1000
+  );
+
   // Handle graceful shutdown
   process.on("SIGTERM", () => {
     console.log("SIGTERM signal received: closing HTTP server");
     weatherDataFetcher.stop();
+    clearInterval(otpCleanupInterval);
     httpServer.close(() => {
       console.log("HTTP server closed");
       process.exit(0);

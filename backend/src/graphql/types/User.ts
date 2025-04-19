@@ -12,6 +12,7 @@ type User {
   updatedAt: DateTime
   mobile: PhoneNumberObject
   active: Boolean
+  superAdmin: Boolean
 }
 
 enum UserOrder {
@@ -88,12 +89,23 @@ input UpdateUserInput {
   active: Boolean
 }
 
+input VerifyOTPInput {
+  email: String!
+  otp: String!
+}
+
 type SignInResponse{
   token: String
   refreshToken: String
   success:Boolean
   message:String 
   errors:[Error!]
+}
+
+type OTPResponse {
+  success: Boolean!
+  message: String!
+  errors: [Error!]
 }
 
 input UpdateProfileInput{
@@ -114,6 +126,11 @@ type Mutation {
   forgotPassword(email: String!, callbackUrl: String!): CommonResponse
   resetPassword(code: String!, newPassword: String!, callbackUrl: String!): CommonResponse
   verifyEmailRequest(email: String!): CommonResponse
+  
+  # OTP related mutations
+  sendOTP(email: String!): OTPResponse
+  verifyOTP(input: VerifyOTPInput!): OTPResponse
+  resetPasswordWithOTP(email: String!, otp: String!, newPassword: String!): OTPResponse
 }
 
 type UserSubscriptionPayload {

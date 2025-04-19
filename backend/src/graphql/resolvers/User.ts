@@ -5,12 +5,12 @@ import {
   getEmailFromHashedEmail,
   getUserByCredential,
   recreateCredential,
-  requestResetPassword,
   tryLogin,
 } from "@/libs/auth";
 import type { AppContext } from "@/types";
 import buildPrismaFilter from "@/utils/buildPrismaFilter";
 import { getConfigs } from "@/utils/configs";
+import { generateOTP, saveOTP, verifyOTPFromDB } from "@/utils/otp";
 import { comparePassword, hashPassword } from "@/utils/password";
 import pubsub from "@/utils/pubsub";
 import { normalizeQueryArgs } from "@/utils/query";
@@ -21,10 +21,13 @@ import {
   renewPasswordSchema,
   resendNewUserSchema,
   resetPasswordSchema,
+  resetPasswordWithOTPSchema,
+  sendOTPSchema,
   signUpSchema,
   updateProfileSchema,
   updateUserSchema,
   verifyEmailSchema,
+  verifyOTPSchema,
 } from "@/validators/user";
 import { withFilter } from "graphql-subscriptions";
 import _ from "lodash";
@@ -46,6 +49,12 @@ export default {
   Query: {
     users: async (parent: any, args: any, context: AppContext, info: any) => {
       const { prisma, authorizedUser } = context;
+
+      // Check if user is admin
+      if (!authorizedUser || !authorizedUser.superAdmin) {
+        throw new Error("Admin privileges required");
+      }
+
       const { first, skip, filter, orderBy } = normalizeQueryArgs(args);
       return prisma.user.findMany({
         take: first,
@@ -56,6 +65,12 @@ export default {
     },
     usersMeta: async (parent: any, args: any, context: AppContext, info: any) => {
       const { prisma, authorizedUser } = context;
+
+      // Check if user is admin
+      if (!authorizedUser || !authorizedUser.superAdmin) {
+        throw new Error("Admin privileges required");
+      }
+
       const { filter } = normalizeQueryArgs(args);
 
       const count = await prisma.user.count({
@@ -213,7 +228,16 @@ export default {
   },
   Mutation: {
     createUser: async (parent: any, args: any, context: AppContext, info: any) => {
-      const { prisma } = context;
+      const { prisma, authorizedUser } = context;
+
+      // Check if user is admin
+      if (!authorizedUser || !authorizedUser.superAdmin) {
+        return {
+          success: false,
+          message: "Admin privileges required",
+        };
+      }
+
       const { error, data } = createUserSchema.safeParse(args.input);
 
       if (error) {
@@ -276,11 +300,18 @@ export default {
     },
     updateUser: async (parent: any, args: any, context: AppContext, info: any) => {
       const { prisma, authorizedUser } = context;
+
+      // Check if user is admin
+      if (!authorizedUser || !authorizedUser.superAdmin) {
+        return {
+          success: false,
+          message: "Admin privileges required",
+        };
+      }
+
       const { id, input } = args;
 
       const { error, data } = updateUserSchema.safeParse(input);
-
-      const isSuperAdmin = authorizedUser.superAdmin;
 
       if (error) {
         return {
@@ -344,7 +375,16 @@ export default {
     },
     resendNewUser: async (parent: any, args: any, context: AppContext, info: any) => {
       try {
-        const { prisma } = context;
+        const { prisma, authorizedUser } = context;
+
+        // Check if user is admin
+        if (!authorizedUser || !authorizedUser.superAdmin) {
+          return {
+            success: false,
+            message: "Admin privileges required",
+          };
+        }
+
         const { id } = args;
 
         const { error, data } = resendNewUserSchema.safeParse(args);
@@ -441,8 +481,9 @@ export default {
     forgotPassword: async (parent: any, args: any, context: AppContext, info: any) => {
       try {
         const { prisma } = context;
+        const { email, callbackUrl } = args;
 
-        const { error, data } = forgotPasswordSchema.safeParse(args);
+        const { error } = forgotPasswordSchema.safeParse(args);
         if (error) {
           return {
             success: false,
@@ -451,15 +492,38 @@ export default {
           };
         }
 
-        const user = await prisma.user.findFirst({ where: buildPrismaFilter({ email: args.email }) });
+        const user = await prisma.user.findFirst({ where: buildPrismaFilter({ email }) });
 
-        if (user) {
-          await requestResetPassword(user, data.callbackUrl, prisma);
+        if (!user) {
+          // Don't reveal if user exists for security
+          return {
+            success: true,
+            message: "If your email exists in our system, a verification code will be sent to reset your password",
+          };
         }
+
+        // Generate OTP for password reset
+        const otp = generateOTP();
+
+        // Save OTP to database
+        await saveOTP(email, otp);
+
+        // Send email with OTP
+        await jobs.perform(
+          { id: "email-job" },
+          {
+            email: "reset-password-otp-email",
+            subject: "Reset Your Password",
+            to: email,
+            user,
+            otp,
+            callbackUrl,
+          }
+        );
 
         return {
           success: true,
-          message: "We received your request reset password. We'll send a email to reset password",
+          message: "Password reset code has been sent to your email",
         };
       } catch (error: any) {
         return {
@@ -666,28 +730,32 @@ export default {
             password: hashedPassword,
             mobile: data.mobile,
             active: true,
+            isEmailVerified: false, // User starts as not verified
             superAdmin: false,
           },
         });
 
-        // Generate verification token
-        const verificationToken = generateHashedEmail(data.email);
+        // Generate OTP for email verification
+        const otp = generateOTP();
 
-        // Send verification email
+        // Save OTP to database
+        await saveOTP(data.email, otp);
+
+        // Send verification email with OTP
         await jobs.perform(
           { id: "email-job" },
           {
-            email: "verify-email",
+            email: "otp-email",
             subject: "Verify Your Email",
             to: data.email,
             user: newUser,
-            verificationToken: verificationToken,
+            otp: otp,
           }
         );
 
         return {
           success: true,
-          message: "Account created successfully. Please check your email to verify your account.",
+          message: "Account created successfully. Please check your email for the verification code.",
         };
       } catch (error: any) {
         console.error("Error creating new user:", error);
@@ -743,6 +811,189 @@ export default {
         return {
           success: true,
           message: "Verification email sent successfully",
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    },
+    sendOTP: async (parent: any, args: any, context: AppContext, info: any) => {
+      try {
+        const { prisma } = context;
+        const { email } = args;
+
+        // Validate email
+        const { error } = sendOTPSchema.safeParse({ email });
+
+        if (error) {
+          return {
+            success: false,
+            message: "Invalid email address",
+            errors: normalizeErrors(error.errors),
+          };
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findFirst({
+          where: {
+            email,
+            deletedAt: null,
+          },
+        });
+
+        if (!user) {
+          // Don't reveal if user exists or not for security
+          return {
+            success: true,
+            message: "If your email exists in our system, an OTP has been sent to your email",
+          };
+        }
+
+        // Generate OTP
+        const otp = generateOTP();
+
+        // Save OTP to database
+        await saveOTP(email, otp);
+
+        // Send OTP via email
+        await jobs.perform(
+          { id: "email-job" },
+          {
+            email: "otp-email",
+            subject: "Your Verification Code",
+            to: email,
+            user,
+            otp,
+          }
+        );
+
+        return {
+          success: true,
+          message: "OTP sent successfully to your email",
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    },
+    verifyOTP: async (parent: any, args: any, context: AppContext, info: any) => {
+      try {
+        const { input } = args;
+        const { email, otp } = input;
+
+        // Validate input
+        const { error } = verifyOTPSchema.safeParse(input);
+
+        if (error) {
+          return {
+            success: false,
+            message: "Invalid input",
+            errors: normalizeErrors(error.errors),
+          };
+        }
+
+        // Try time-based verification first (more secure)
+        let isValid = verifyTOTP(email, otp);
+
+        // If time-based verification fails, try database verification as fallback
+        if (!isValid) {
+          isValid = await verifyOTPFromDB(email, otp);
+        }
+
+        if (!isValid) {
+          return {
+            success: false,
+            message: "Invalid or expired OTP",
+          };
+        }
+
+        // If OTP used for email verification, update the user
+        const { prisma } = context;
+        await prisma.user.updateMany({
+          where: {
+            email,
+            isEmailVerified: false,
+          },
+          data: {
+            isEmailVerified: true,
+          },
+        });
+
+        return {
+          success: true,
+          message: "OTP verified successfully",
+        };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    },
+    resetPasswordWithOTP: async (parent: any, args: any, context: AppContext, info: any) => {
+      try {
+        const { prisma } = context;
+        const { email, otp, newPassword } = args;
+
+        // Validate input
+        const { error } = resetPasswordWithOTPSchema.safeParse(args);
+
+        if (error) {
+          return {
+            success: false,
+            message: "Invalid input",
+            errors: normalizeErrors(error.errors),
+          };
+        }
+
+        // Check if user exists
+        const user = await prisma.user.findFirst({
+          where: {
+            email,
+            deletedAt: null,
+          },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            message: "User not found",
+          };
+        }
+
+        // Try time-based verification first (more secure)
+        let isValid = verifyTOTP(email, otp);
+
+        // If time-based verification fails, try database verification as fallback
+        if (!isValid) {
+          isValid = await verifyOTPFromDB(email, otp);
+        }
+
+        if (!isValid) {
+          return {
+            success: false,
+            message: "Invalid or expired OTP",
+          };
+        }
+
+        // Update password
+        const hashedPassword = hashPassword(newPassword);
+
+        await prisma.user.update({
+          where: { id: user.id },
+          data: {
+            password: hashedPassword,
+            lastSignedInAt: new Date(),
+          },
+        });
+
+        return {
+          success: true,
+          message: "Password reset successfully",
         };
       } catch (error: any) {
         return {

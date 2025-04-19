@@ -66,6 +66,7 @@
     "mongodb": "^6.15.0",
     "nodemailer": "^6.10.1",
     "nodemon": "^3.1.9",
+    "otpauth": "^9.4.0",
     "prettier": "^3.5.3",
     "prisma": "^6.6.0",
     "prisma-extension-soft-delete": "^2.0.1",

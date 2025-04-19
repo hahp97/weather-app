@@ -52,17 +52,40 @@ export const addUser: MiddlewareFunction = async (req, res, next) => {
   next();
 };
 
-export const limiter = slowDown({
-  windowMs: 10 * 60 * 1000,
-  delayAfter: 100,
-  delayMs: (hits) => hits * 50,
-  maxDelayMs: 1000,
-  keyGenerator: (req): string | Promise<string> => {
-    if (!req.ip) {
-      console.error("Warning: request.ip is missing!");
-      return req.socket.remoteAddress as string;
-    }
+// This middleware checks if the user is an admin and rejects the request if not
+export const requireAdmin: MiddlewareFunction = async (req, res, next) => {
+  if (!req.user || !req.user.id) {
+    res.status(401).json({
+      success: false,
+      message: "Authentication required",
+    });
+    return;
+  }
 
-    return req.ip.replace(/:\d+[^:]*$/, "");
+  const user = await prisma.user.findFirst({
+    where: { id: req.user.id, active: true },
+  });
+
+  if (!user || !user.superAdmin) {
+    res.status(403).json({
+      success: false,
+      message: "Admin privileges required",
+    });
+    return;
+  }
+
+  next();
+};
+
+// Rate limiter to prevent brute force attacks
+export const limiter = slowDown({
+  windowMs: 15 * 60 * 1000, // 15 minutes
+  delayAfter: 100, // allow 100 requests per window without delay
+  delayMs: 500, // add 500ms delay after limit is reached
+  maxDelayMs: 20000, // max delay is 20 seconds
+  skip: (req) => {
+    // Skip rate limiting for trusted IPs or development environment
+    const { appEnv } = getConfigs();
+    return appEnv === "development";
   },
 });
