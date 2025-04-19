@@ -1,6 +1,8 @@
 process.env.TZ = "UTC";
 
+import { setupMongoDBCollections } from "@/database/setupTimeSeriesCollection";
 import { createApolloServerMiddleware } from "@/graphql";
+import { WeatherDataFetcher } from "@/jobs/weatherDataFetcher";
 import { getConfigs } from "@/utils/configs";
 import { addTokens, addUser, limiter } from "@/utils/middleware";
 import bodyParser from "body-parser";
@@ -15,6 +17,10 @@ async function start() {
   console.log(`======================`);
   console.log(`Initializing Server...`);
   console.log(`======================`);
+
+  // Setup MongoDB Collections before starting the server
+  await setupMongoDBCollections();
+  console.log(`MongoDB collections initialized`);
 
   const app = express();
   app.set("trust proxy", 1);
@@ -33,6 +39,20 @@ async function start() {
   const apolloServerMiddleware = await createApolloServerMiddleware({ httpServer });
 
   app.use("/graphql", apolloServerMiddleware);
+
+  // Start the weather data fetcher background job
+  const weatherDataFetcher = new WeatherDataFetcher(5); // Fetch every 5 minutes
+  weatherDataFetcher.start();
+
+  // Handle graceful shutdown
+  process.on("SIGTERM", () => {
+    console.log("SIGTERM signal received: closing HTTP server");
+    weatherDataFetcher.stop();
+    httpServer.close(() => {
+      console.log("HTTP server closed");
+      process.exit(0);
+    });
+  });
 
   await new Promise<void>((resolve) => httpServer.listen({ port: PORT }, resolve));
   console.log(`🚀 Server ready at http://localhost:${PORT}/graphql`);

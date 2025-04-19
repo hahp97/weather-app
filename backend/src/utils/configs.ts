@@ -19,6 +19,7 @@ const defaultConfigs = {
   redisUsername: null,
   redisPassword: null,
   redisUrl: "redis://127.0.0.1:6379/0",
+  openWeatherApiKey: null,
 };
 
 export function getConfigs() {
@@ -48,6 +49,7 @@ export function getConfigs() {
     REDIS_USERNAME = defaultConfigs.redisUsername,
     REDIS_PASSWORD = defaultConfigs.redisPassword,
     REDIS_URL = defaultConfigs.redisUrl,
+    OPEN_WEATHER_API_KEY = defaultConfigs.openWeatherApiKey,
   } = process.env || {};
 
   const configs = {
@@ -76,6 +78,7 @@ export function getConfigs() {
     redisUsername: REDIS_USERNAME,
     redisPassword: REDIS_PASSWORD,
     redisUrl: REDIS_URL,
+    openWeatherApiKey: OPEN_WEATHER_API_KEY,
   };
   return configs;
 }
