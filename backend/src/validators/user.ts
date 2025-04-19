@@ -18,6 +18,21 @@ export const createUserSchema = z.object({
   active: z.boolean().default(true),
 });
 
+export const signUpSchema = z.object({
+  email: z.string().email("Invalid email address"),
+  username: z.string().min(3, "Username must be at least 3 characters long"),
+  password: z
+    .string()
+    .min(6, "Password must be at least 6 characters long")
+    .refine((val) => !/\s/.test(val), "Password cannot contain spaces"),
+  name: z.string().min(1, "Name is required"),
+  mobile: z.object({
+    code: z.string().default("65"),
+    country: z.string().default("SG"),
+    number: z.string().min(8, "Mobile number must be at least 8 digits long"),
+  }),
+});
+
 export const updateUserSchema = z.object({
   email: z.string().email().optional(),
   name: z.string().optional(),
@@ -72,4 +87,8 @@ export const updateProfileSchema = z.object({
     .min(6, "Password must be at least 6 characters long")
     .refine((val) => !/\s/.test(val), "Password cannot contain spaces")
     .optional(),
+});
+
+export const verifyEmailSchema = z.object({
+  email: z.string().email("Invalid email address"),
 });

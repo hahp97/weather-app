@@ -7,8 +7,9 @@ model User {
     name   String
     mobile PhoneNumberObject
 
-    active         Boolean   @default(true)
-    lastSignedInAt DateTime?
+    active          Boolean   @default(true)
+    isEmailVerified Boolean   @default(false)
+    lastSignedInAt  DateTime?
 
     superAdmin Boolean @default(false)
 

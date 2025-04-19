@@ -51,6 +51,7 @@ type Query {
   me: User
   resetPasswordInfo(code: String!): CommonResponse
   createPasswordInfo(code:String!) : CommonResponse
+  verifyEmail(token: String!): CommonResponse
 }
 
 input merchantRole {
@@ -68,6 +69,14 @@ input CreateUserInput {
   merchantRoles: [merchantRole]
   mobile: PhoneNumberObject!
   active: Boolean
+}
+
+input SignUpInput {
+  email: String!
+  username: String!
+  password: String!
+  name: String!
+  mobile: PhoneNumberObject!
 }
 
 input UpdateUserInput {
@@ -98,11 +107,13 @@ type Mutation {
   createUser(input: CreateUserInput!): CommonResponse
   updateUser(id: ID!, input: UpdateUserInput!): CommonResponse
   signIn(identifier: String!, password: String!): SignInResponse
+  signUp(input: SignUpInput!): CommonResponse
   updateProfile(input: UpdateProfileInput!): CommonResponse
   resendNewUser(id: ID!,callbackUrl: String!): CommonResponse
   createPassword(code: String!, newPassword: String!): CommonResponse
   forgotPassword(email: String!, callbackUrl: String!): CommonResponse
   resetPassword(code: String!, newPassword: String!, callbackUrl: String!): CommonResponse
+  verifyEmailRequest(email: String!): CommonResponse
 }
 
 type UserSubscriptionPayload {

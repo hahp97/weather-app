@@ -1,6 +1,13 @@
 import { compareObject } from "@/helpers/model";
 import jobs from "@/jobs";
-import { getUserByCredential, recreateCredential, requestResetPassword, tryLogin } from "@/libs/auth";
+import {
+  generateHashedEmail,
+  getEmailFromHashedEmail,
+  getUserByCredential,
+  recreateCredential,
+  requestResetPassword,
+  tryLogin,
+} from "@/libs/auth";
 import type { AppContext } from "@/types";
 import buildPrismaFilter from "@/utils/buildPrismaFilter";
 import { getConfigs } from "@/utils/configs";
@@ -14,8 +21,10 @@ import {
   renewPasswordSchema,
   resendNewUserSchema,
   resetPasswordSchema,
+  signUpSchema,
   updateProfileSchema,
   updateUserSchema,
+  verifyEmailSchema,
 } from "@/validators/user";
 import { withFilter } from "graphql-subscriptions";
 import _ from "lodash";
@@ -130,6 +139,70 @@ export default {
           success: true,
           message: "Your request is valid.",
         };
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    },
+    verifyEmail: async (parent: any, args: any, context: AppContext, info: any) => {
+      try {
+        const { prisma } = context;
+        const { token } = args;
+
+        if (!token) {
+          return {
+            success: false,
+            message: "Invalid verification token",
+          };
+        }
+
+        // Extract email from token
+        try {
+          const email = getEmailFromHashedEmail(token);
+
+          if (!email) {
+            return {
+              success: false,
+              message: "Invalid verification token",
+            };
+          }
+
+          // Find user with the email
+          const user = await prisma.user.findFirst({
+            where: {
+              email: email,
+              deletedAt: null,
+            },
+          });
+
+          if (!user) {
+            return {
+              success: false,
+              message: "User not found",
+            };
+          }
+
+          // Update user's email verification status
+          // Note: We need to add isEmailVerified field to User model
+          await prisma.user.update({
+            where: { id: user.id },
+            data: {
+              isEmailVerified: true,
+            },
+          });
+
+          return {
+            success: true,
+            message: "Email verified successfully",
+          };
+        } catch (error) {
+          return {
+            success: false,
+            message: "Invalid verification token",
+          };
+        }
       } catch (error: any) {
         return {
           success: false,
@@ -531,6 +604,146 @@ export default {
         }
         const result = await tryLogin({ identifier, password }, context);
         return result;
+      } catch (error: any) {
+        return {
+          success: false,
+          message: error.message,
+        };
+      }
+    },
+    signUp: async (parent: any, args: any, context: AppContext, info: any) => {
+      const { prisma } = context;
+      const { error, data } = signUpSchema.safeParse(args.input);
+
+      if (error) {
+        return {
+          success: false,
+          message: "Invalid input",
+          errors: normalizeErrors(error.errors),
+        };
+      }
+
+      try {
+        // Check if user with email or username already exists
+        const existingUser = await prisma.user.findFirst({
+          where: {
+            OR: [{ email: data.email }, { username: data.username }],
+            deletedAt: null,
+          },
+        });
+
+        if (existingUser) {
+          const errors = [];
+          if (existingUser.email === data.email) {
+            errors.push({
+              field: "email",
+              message: "Email already exists",
+              path: "email",
+            });
+          }
+
+          if (existingUser.username === data.username) {
+            errors.push({
+              field: "username",
+              message: "Username already exists",
+              path: "username",
+            });
+          }
+          return {
+            success: false,
+            message: "Email or username already exists",
+            errors,
+          };
+        }
+
+        // Create the user with hashed password
+        const hashedPassword = hashPassword(data.password);
+        const newUser = await prisma.user.create({
+          data: {
+            email: data.email,
+            username: data.username,
+            name: data.name,
+            password: hashedPassword,
+            mobile: data.mobile,
+            active: true,
+            superAdmin: false,
+          },
+        });
+
+        // Generate verification token
+        const verificationToken = generateHashedEmail(data.email);
+
+        // Send verification email
+        await jobs.perform(
+          { id: "email-job" },
+          {
+            email: "verify-email",
+            subject: "Verify Your Email",
+            to: data.email,
+            user: newUser,
+            verificationToken: verificationToken,
+          }
+        );
+
+        return {
+          success: true,
+          message: "Account created successfully. Please check your email to verify your account.",
+        };
+      } catch (error: any) {
+        console.error("Error creating new user:", error);
+        return {
+          success: false,
+          message: "Failed to create account",
+          errors: [{ message: error.message }],
+        };
+      }
+    },
+    verifyEmailRequest: async (parent: any, args: any, context: AppContext, info: any) => {
+      try {
+        const { prisma } = context;
+        const { error, data } = verifyEmailSchema.safeParse(args);
+
+        if (error) {
+          return {
+            success: false,
+            message: "Invalid input",
+            errors: normalizeErrors(error.errors),
+          };
+        }
+
+        const user = await prisma.user.findFirst({
+          where: {
+            email: data.email,
+            deletedAt: null,
+          },
+        });
+
+        if (!user) {
+          return {
+            success: false,
+            message: "User not found",
+          };
+        }
+
+        // Generate verification token
+        const verificationToken = generateHashedEmail(data.email);
+
+        // Send verification email
+        await jobs.perform(
+          { id: "email-job" },
+          {
+            email: "verify-email",
+            subject: "Verify Your Email",
+            to: data.email,
+            user: user,
+            verificationToken: verificationToken,
+          }
+        );
+
+        return {
+          success: true,
+          message: "Verification email sent successfully",
+        };
       } catch (error: any) {
         return {
           success: false,

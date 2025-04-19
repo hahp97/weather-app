@@ -476,24 +476,12 @@ export const generateHashedEmail = (email: string) => {
   return code;
 };
 
-export const getEmailFromHashedEmail = (token: string) => {
+export const getEmailFromHashedEmail = (token: string): string | null => {
   try {
     const { privatePayload } = decryptJwt(token, secret1 as string);
     return privatePayload.email;
   } catch (error) {
-    if (error instanceof TokenExpiredError) {
-      return {
-        error: {
-          code: "TOKEN_EXPIRED",
-          message: "Your token is expired.",
-        },
-      };
-    }
-    return {
-      error: {
-        code: "INVALID",
-        message: "Your request is invalid.",
-      },
-    };
+    console.error("Error decrypting email token:", error);
+    return null;
   }
 };
