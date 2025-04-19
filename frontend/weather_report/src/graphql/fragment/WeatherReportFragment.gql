@@ -1,0 +1,8 @@
+fragment WeatherReportFragment on WeatherReport {
+  id
+  timestamp
+  temperature
+  pressure
+  humidity
+  cloudCover
+}

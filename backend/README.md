@@ -1,56 +1,57 @@
 # Weather Report System Backend
 
-Backend API cho hệ thống báo cáo thời tiết Changi Airport, cung cấp các API để lấy dữ liệu thời tiết, tạo báo cáo, và quản lý người dùng.
+Backend API for the Changi Airport weather reporting system, providing APIs for weather data retrieval, report generation, and user management.
 
-## Cài đặt
+## Installation
 
 ```bash
 # Clone repository
 git clone <repository-url>
 
-# Di chuyển vào thư mục backend
+# Move to backend directory
 cd backend
 
-# Cài đặt dependencies
+# Install dependencies
 yarn install
 
-# Tạo file .env từ .env.example và cập nhật các biến môi trường
+# Create .env file from .env.example and update environment variables
 cp .env.example .env
 
-# Chạy migration và tạo database
+# Run migration and create database
 npx prisma generate
 
-# Chạy server ở môi trường development
+# Run server in development environment
 yarn dev
 ```
 
-## Hệ thống xác thực và phân quyền người dùng
+## Authentication and User Permissions System
 
-### Loại người dùng
+### User Types
 
-Hệ thống có hai loại người dùng:
+The system has two types of users:
 
 1. **Admin (superAdmin = true)**
 
-   - Có quyền quản lý toàn bộ người dùng và báo cáo trong hệ thống
-   - Có thể tạo tài khoản admin khác
-   - Truy cập và quản lý tất cả báo cáo thời tiết
+   - Has full access to manage all users and reports in the system
+   - Can create other admin accounts
+   - Can access and manage all weather reports
+   - Can configure system settings including weather API update intervals
 
-2. **User thường (superAdmin = false)**
-   - Có thể tạo và xem báo cáo thời tiết cá nhân
-   - Quản lý thông tin cá nhân
-   - Không có quyền truy cập tài nguyên của người dùng khác
+2. **Regular User (superAdmin = false)**
+   - Can create and view personal weather reports
+   - Can manage personal information
+   - Cannot access other users' resources
 
-### Luồng xác thực (Authentication Flow)
+### Authentication Flow
 
-#### Đăng ký tài khoản (User Self-Registration)
+#### User Self-Registration
 
-1. Người dùng điền thông tin đăng ký gồm: email, username, password, name và số điện thoại
-2. Backend kiểm tra email và username đã tồn tại chưa
-3. Nếu chưa tồn tại, tạo tài khoản người dùng mới với quyền user thường (superAdmin = false)
-4. Gửi email xác thực đến địa chỉ email đã đăng ký
-5. Người dùng nhấp vào link xác thực email để hoàn tất quá trình đăng ký
-6. Hệ thống cập nhật trạng thái isEmailVerified = true
+1. User fills in registration information: email, username, password, name, and phone number
+2. Backend checks if email and username already exist
+3. If not exists, creates a new user account with regular user permissions (superAdmin = false)
+4. Sends verification email to the registered email address
+5. User clicks verification link to complete registration
+6. System updates isEmailVerified status to true
 
 ```graphql
 mutation SignUp($input: SignUpInput!) {
@@ -65,11 +66,11 @@ mutation SignUp($input: SignUpInput!) {
 }
 ```
 
-#### Xác thực email
+#### Email Verification
 
-1. Người dùng nhấp vào link trong email xác thực
-2. Frontend chuyển hướng đến trang xác thực với token
-3. Frontend gọi API xác thực email với token
+1. User clicks verification link in email
+2. Frontend redirects to verification page with token
+3. Frontend calls email verification API with token
 
 ```graphql
 query VerifyEmail($token: String!) {
@@ -80,11 +81,11 @@ query VerifyEmail($token: String!) {
 }
 ```
 
-#### Đăng nhập
+#### Login
 
-1. Người dùng nhập email/username và password
-2. Backend xác thực thông tin và trả về JWT token và refresh token
-3. Frontend lưu token và sử dụng cho các yêu cầu API tiếp theo
+1. User enters email/username and password
+2. Backend authenticates and returns JWT token and refresh token
+3. Frontend stores token and uses it for subsequent API requests
 
 ```graphql
 mutation SignIn($identifier: String!, $password: String!) {
@@ -100,11 +101,11 @@ mutation SignIn($identifier: String!, $password: String!) {
 }
 ```
 
-#### Quên mật khẩu
+#### Forgot Password
 
-1. Người dùng nhập email để yêu cầu đặt lại mật khẩu
-2. Backend gửi email với link đặt lại mật khẩu
-3. Người dùng nhấp vào link và đặt mật khẩu mới
+1. User enters email to request password reset
+2. Backend sends email with password reset link
+3. User clicks link and sets new password
 
 ```graphql
 mutation ForgotPassword($email: String!, $callbackUrl: String!) {
@@ -115,7 +116,7 @@ mutation ForgotPassword($email: String!, $callbackUrl: String!) {
 }
 ```
 
-#### Đặt lại mật khẩu
+#### Reset Password
 
 ```graphql
 mutation ResetPassword($code: String!, $newPassword: String!, $callbackUrl: String!) {
@@ -126,82 +127,96 @@ mutation ResetPassword($code: String!, $newPassword: String!, $callbackUrl: Stri
 }
 ```
 
-### Quyền và chức năng
+### Permissions and Features
 
-#### Chức năng chung
+#### Common Features
 
-| Chức năng                  | Admin | User thường |
-| -------------------------- | ----- | ----------- |
-| Đăng nhập                  | ✅    | ✅          |
-| Đăng ký tài khoản          | ✅    | ✅          |
-| Quên mật khẩu              | ✅    | ✅          |
-| Xem thông tin cá nhân      | ✅    | ✅          |
-| Cập nhật thông tin cá nhân | ✅    | ✅          |
+| Feature                     | Admin | Regular User |
+| --------------------------- | ----- | ------------ |
+| Login                       | ✅    | ✅           |
+| Register Account            | ✅    | ✅           |
+| Forgot Password             | ✅    | ✅           |
+| View Personal Information   | ✅    | ✅           |
+| Update Personal Information | ✅    | ✅           |
 
-#### Chức năng báo cáo thời tiết
+#### Weather Report Features
 
-| Chức năng                  | Admin | User thường               |
-| -------------------------- | ----- | ------------------------- |
-| Xem thời tiết hiện tại     | ✅    | ✅                        |
-| Tạo báo cáo thời tiết      | ✅    | ✅                        |
-| Xem báo cáo của mình       | ✅    | ✅                        |
-| Xem báo cáo của người khác | ✅    | ❌                        |
-| So sánh báo cáo            | ✅    | ✅ (chỉ báo cáo của mình) |
+| Feature               | Admin | Regular User          |
+| --------------------- | ----- | --------------------- |
+| View Current Weather  | ✅    | ✅                    |
+| Create Weather Report | ✅    | ✅                    |
+| View Own Reports      | ✅    | ✅                    |
+| View Others' Reports  | ✅    | ❌                    |
+| Compare Reports       | ✅    | ✅ (own reports only) |
 
-#### Chức năng quản lý người dùng
+#### User Management Features
 
-| Chức năng                     | Admin | User thường |
-| ----------------------------- | ----- | ----------- |
-| Xem danh sách người dùng      | ✅    | ❌          |
-| Tạo tài khoản (cả admin)      | ✅    | ❌          |
-| Tắt/bật tài khoản             | ✅    | ❌          |
-| Cập nhật thông tin người dùng | ✅    | ❌          |
+| Feature                           | Admin | Regular User |
+| --------------------------------- | ----- | ------------ |
+| View User List                    | ✅    | ❌           |
+| Create Accounts (including admin) | ✅    | ❌           |
+| Enable/Disable Accounts           | ✅    | ❌           |
+| Update User Information           | ✅    | ❌           |
 
-### Bảo mật
+### Security
 
-- JWT tokens được sử dụng cho xác thực API
-- Tokens có thời gian sống giới hạn (access token: 4 ngày, refresh token: 7 ngày)
-- Mật khẩu được mã hóa trước khi lưu vào database
-- API rate limiting để ngăn chặn tấn công brute force
-- Email xác thực cho đăng ký tài khoản và đặt lại mật khẩu
+- JWT tokens used for API authentication
+- Tokens have limited lifetime (access token: 4 days, refresh token: 7 days)
+- Passwords are encrypted before database storage
+- API rate limiting to prevent brute force attacks
+- Email verification for account registration and password reset
 
 ## API GraphQL
 
-Backend cung cấp API GraphQL tại endpoint `/graphql` với các queries và mutations chính:
+Backend provides GraphQL API at `/graphql` endpoint with main queries and mutations:
 
 ### Weather API
 
-- `currentWeather`: Lấy dữ liệu thời tiết hiện tại
-- `generateWeatherReport`: Tạo báo cáo thời tiết
-- `weatherReports`: Lấy danh sách báo cáo thời tiết
-- `compareWeatherReports`: So sánh hai báo cáo thời tiết
+- `currentWeather`: Get current weather data
+- `generateWeatherReport`: Generate weather report
+- `weatherReports`: Get list of weather reports
+- `compareWeatherReports`: Compare two weather reports
+- `updateWeatherInterval`: Configure weather API update interval (admin only)
 
 ### User API
 
-- `signUp`: Đăng ký tài khoản mới
-- `signIn`: Đăng nhập
-- `me`: Lấy thông tin người dùng hiện tại
-- `updateProfile`: Cập nhật thông tin cá nhân
-- `users`: Lấy danh sách người dùng (chỉ admin)
-- `createUser`: Tạo tài khoản người dùng (chỉ admin)
+- `signUp`: Register new account
+- `signIn`: Login
+- `me`: Get current user information
+- `updateProfile`: Update personal information
+- `users`: Get user list (admin only)
+- `createUser`: Create user account (admin only)
 
-## Cấu trúc thư mục
+## Directory Structure
 
 ```
 backend/
 │
-├── prisma/          # Prisma schema và migrations
+├── prisma/          # Prisma schema and migrations
 ├── src/
 │   ├── api/         # API clients (OpenWeather)
-│   ├── configs/     # Cấu hình ứng dụng
-│   ├── constants/   # Các hằng số
-│   ├── database/    # Kết nối database và services
-│   ├── graphql/     # GraphQL schema và resolvers
-│   ├── helpers/     # Các hàm helper
+│   ├── configs/     # Application configurations
+│   ├── constants/   # Constants
+│   ├── database/    # Database connection and services
+│   ├── graphql/     # GraphQL schema and resolvers
+│   ├── helpers/     # Helper functions
 │   ├── jobs/        # Background jobs (email, weather fetcher)
-│   ├── libs/        # Thư viện (auth, etc.)
+│   ├── libs/        # Libraries (auth, etc.)
 │   ├── types/       # TypeScript type definitions
-│   ├── utils/       # Các hàm tiện ích
+│   ├── utils/       # Utility functions
 │   ├── validators/  # Zod validators
 │   └── index.ts     # Entry point
 ```
+
+## Phone Number Validation
+
+The system supports phone numbers from two countries:
+
+1. Singapore (Country Code: 65)
+
+   - Format: 8 digits
+   - Example: 65-12345678
+
+2. Vietnam (Country Code: 84)
+   - Format: 9-10 digits (excluding country code)
+   - Examples: 84-912345678, 84-1234567890

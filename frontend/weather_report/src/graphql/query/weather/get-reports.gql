@@ -1,0 +1,7 @@
+#import '../../fragment/WeatherReportFragment.gql'
+
+query GetWeatherReports {
+  weatherReports {
+    ...WeatherReportFragment
+  }
+}

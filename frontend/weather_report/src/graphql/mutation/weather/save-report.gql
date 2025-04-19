@@ -1,0 +1,11 @@
+#import '../../fragment/WeatherReportFragment.gql'
+
+mutation SaveWeatherReport($input: WeatherReportInput!) {
+  saveWeatherReport(input: $input) {
+    success
+    message
+    report {
+      ...WeatherReportFragment
+    }
+  }
+}
