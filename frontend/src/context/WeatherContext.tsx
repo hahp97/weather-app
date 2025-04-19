@@ -8,13 +8,26 @@ import {
   useState,
 } from "react";
 
+// Cập nhật cấu trúc WeatherReport để tương thích với dữ liệu backend
 export interface WeatherReport {
   id: string;
-  timestamp: string;
-  temperature: number;
-  pressure: number;
-  humidity: number;
-  cloudCover: number;
+  title?: string;
+  startTime?: string;
+  endTime?: string;
+  avgTemperature: number;
+  avgPressure: number;
+  avgHumidity: number;
+  avgCloudCover: number;
+  avgWindSpeed?: number;
+  dataPointsCount?: number;
+  createdAt?: string;
+  updatedAt?: string;
+  // Các trường này giữ cho tương thích ngược với code cũ
+  timestamp?: string;
+  temperature?: number;
+  pressure?: number;
+  humidity?: number;
+  cloudCover?: number;
 }
 
 interface WeatherContextType {

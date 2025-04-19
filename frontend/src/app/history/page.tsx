@@ -88,6 +88,15 @@ export default function HistoryPage() {
       // Convert backend report format to context format
       const contextReports = data.weatherReports.map((report) => ({
         id: report.id,
+        title: report.title,
+        startTime: report.startTime,
+        endTime: report.endTime,
+        avgTemperature: report.avgTemperature,
+        avgPressure: report.avgPressure,
+        avgHumidity: report.avgHumidity,
+        avgCloudCover: report.avgCloudCover,
+        dataPointsCount: report.dataPointsCount,
+        createdAt: report.createdAt,
         timestamp: report.createdAt,
         temperature: report.avgTemperature,
         pressure: report.avgPressure,

@@ -1,8 +1,14 @@
 fragment WeatherReportFragment on WeatherReport {
   id
-  timestamp
-  temperature
-  pressure
-  humidity
-  cloudCover
+  title
+  startTime
+  endTime
+  avgTemperature
+  avgPressure
+  avgHumidity
+  avgCloudCover
+  avgWindSpeed
+  dataPointsCount
+  createdAt
+  updatedAt
 }

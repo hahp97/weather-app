@@ -13,13 +13,14 @@ import { useToast } from "@/context/ToastContext";
 import { useWeather } from "@/context/WeatherContext";
 import { cn, formatDate } from "@/utils/common";
 import { useMutation, useQuery } from "@apollo/client";
-import { AlertTriangle, CalendarIcon } from "lucide-react";
+import { AlertTriangle, CalendarIcon, Info } from "lucide-react";
 import { useState } from "react";
 
 // Import GraphQL files
 import FetchHistoricalWeatherMutation from "@/graphql/mutation/weather/fetch-historical-weather.gql";
 import GenerateWeatherReportMutation from "@/graphql/mutation/weather/generate-weather-report.gql";
 import CurrentWeatherQuery from "@/graphql/query/weather/current-weather.gql";
+import GetWeatherReportsQuery from "@/graphql/query/weather/get-reports.gql";
 
 interface WeatherData {
   id: string;
@@ -30,6 +31,21 @@ interface WeatherData {
   cloudCover: number;
   windSpeed?: number;
   weatherCondition?: string;
+}
+
+interface WeatherReport {
+  id: string;
+  title: string;
+  startTime: string;
+  endTime: string;
+  avgTemperature: number;
+  avgPressure: number;
+  avgHumidity: number;
+  avgCloudCover: number;
+  avgWindSpeed: number;
+  dataPointsCount: number;
+  createdAt: string;
+  updatedAt: string;
 }
 
 export default function GeneratePage() {
@@ -44,6 +60,12 @@ export default function GeneratePage() {
 
   // Current Weather Query
   const { refetch: refetchCurrentWeather } = useQuery(CurrentWeatherQuery, {
+    fetchPolicy: "network-only",
+    skip: true, // Don't run the query on component mount
+  });
+
+  // Weather Reports Query
+  const { refetch: refetchWeatherReports } = useQuery(GetWeatherReportsQuery, {
     fetchPolicy: "network-only",
     skip: true, // Don't run the query on component mount
   });
@@ -135,14 +157,52 @@ export default function GeneratePage() {
       });
 
       if (data?.generateWeatherReport?.success) {
-        const reportData = data.generateWeatherReport.extra?.report;
+        console.log("Generate report response:", data.generateWeatherReport);
+
+        // Check for report data in response
+        const reportData =
+          data.generateWeatherReport.data?.report ||
+          data.generateWeatherReport.extra?.report;
+
         if (reportData) {
-          addReport(reportData);
-          toast.success("Weather report saved successfully");
+          // We have the report data in the response
+          handleReportData(reportData);
         } else {
-          const errorMsg = "Report generated but no data was returned";
-          setErrorMessage(errorMsg);
-          toast.error(errorMsg);
+          // The report was generated successfully but data is not in the response
+          // Fetch the latest reports to get the just-created report
+          try {
+            const { data: reportsData } = await refetchWeatherReports();
+
+            if (
+              reportsData?.weatherReports &&
+              reportsData.weatherReports.length > 0
+            ) {
+              // Sort reports by creation date (newest first) and take the first one
+              const reports = [...reportsData.weatherReports];
+              reports.sort(
+                (a, b) =>
+                  new Date(b.createdAt).getTime() -
+                  new Date(a.createdAt).getTime()
+              );
+
+              const latestReport = reports[0];
+              handleReportData(latestReport);
+            } else {
+              // No reports found, but save was successful according to backend
+              toast.success(
+                "Weather report saved successfully, but couldn't fetch the details"
+              );
+            }
+          } catch (fetchError) {
+            console.error(
+              "Error fetching reports after generation:",
+              fetchError
+            );
+            // Report was likely saved but we couldn't fetch it
+            toast.success(
+              "Weather report saved successfully, but couldn't fetch the details"
+            );
+          }
         }
       } else {
         const error =
@@ -162,11 +222,53 @@ export default function GeneratePage() {
     }
   };
 
+  // Helper function to process report data
+  const handleReportData = (reportData: WeatherReport) => {
+    // Chuyển đổi dữ liệu báo cáo để phù hợp với interface WeatherReport mới
+    const formattedReport = {
+      id: reportData.id,
+      title: reportData.title,
+      startTime: reportData.startTime,
+      endTime: reportData.endTime,
+      avgTemperature: reportData.avgTemperature || 0,
+      avgPressure: reportData.avgPressure || 0,
+      avgHumidity: reportData.avgHumidity || 0,
+      avgCloudCover: reportData.avgCloudCover || 0,
+      avgWindSpeed: reportData.avgWindSpeed || 0,
+      dataPointsCount: reportData.dataPointsCount || 0,
+      createdAt: reportData.createdAt,
+      updatedAt: reportData.updatedAt,
+      // Thêm các trường cũ cho khả năng tương thích
+      timestamp: reportData.createdAt || new Date().toISOString(),
+      temperature: reportData.avgTemperature || 0,
+      pressure: reportData.avgPressure || 0,
+      humidity: reportData.avgHumidity || 0,
+      cloudCover: reportData.avgCloudCover || 0,
+    };
+
+    addReport(formattedReport);
+    toast.success("Weather report saved successfully");
+  };
+
   return (
     <div className="container py-8 max-w-4xl mx-auto">
       <h1 className="text-3xl font-bold mb-8 text-center">
         Weather Report Generator
       </h1>
+
+      {/* Info banner about historical data */}
+      <div className="mb-6 p-4 bg-blue-50 border border-blue-200 rounded-md flex items-start">
+        <Info className="h-5 w-5 text-blue-500 mr-2 flex-shrink-0 mt-0.5" />
+        <div className="text-sm text-blue-800">
+          <p className="font-medium">About Historical Weather Data</p>
+          <p>
+            This application is using the OpenWeather API. Currently, historical
+            weather data (searching by date) requires a paid OpenWeather API
+            subscription plan. If you&apos;re experiencing issues with
+            historical data, please use the current weather option instead.
+          </p>
+        </div>
+      </div>
 
       <Card className="mb-8">
         <CardHeader>
@@ -214,11 +316,23 @@ export default function GeneratePage() {
             <Button
               onClick={handleGenerateReport}
               disabled={isLoading}
-              className="px-8"
+              className={cn(
+                "px-8",
+                date
+                  ? "bg-amber-600 hover:bg-amber-700"
+                  : "bg-blue-600 hover:bg-blue-700"
+              )}
             >
-              Generate
+              {date ? "Generate Historical Data*" : "Generate Current Data"}
             </Button>
           </div>
+
+          {date && (
+            <div className="mt-2 text-xs text-amber-600 flex items-center">
+              <AlertTriangle className="h-3 w-3 mr-1" />
+              <span>Historical data may require a paid API subscription</span>
+            </div>
+          )}
 
           {isSubscriptionError && (
             <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
@@ -229,6 +343,16 @@ export default function GeneratePage() {
                   Historical weather data requires a paid OpenWeather API
                   subscription. Please use current weather data instead or
                   contact administrator.
+                </p>
+                <p className="mt-2">
+                  <a
+                    href="https://openweathermap.org/price"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="underline font-medium"
+                  >
+                    OpenWeather Subscription Plans
+                  </a>
                 </p>
               </div>
             </div>
