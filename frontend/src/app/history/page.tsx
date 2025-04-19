@@ -6,6 +6,7 @@ import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useWeather } from "@/context/WeatherContext";
 import { formatDate } from "@/utils/common";
 import { gql, useQuery } from "@apollo/client";
+import { ChevronLeft, ChevronRight } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";
 
@@ -67,15 +68,18 @@ export default function HistoryPage() {
   const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
   const [sortField, setSortField] = useState<string>("createdAt");
   const [sortDirection, setSortDirection] = useState<"ASC" | "DESC">("DESC");
+  const [currentPage, setCurrentPage] = useState<number>(1);
+  const [pageSize, setPageSize] = useState<number>(10);
   const router = useRouter();
   const { setReports } = useWeather();
 
   // Query for weather reports
-  const { data, loading, error } = useQuery<QueryResult>(
+  const { data, loading, error, refetch } = useQuery<QueryResult>(
     GET_WEATHER_REPORTS_QUERY,
     {
       variables: {
-        first: 100,
+        first: pageSize,
+        skip: (currentPage - 1) * pageSize,
         orderBy: [`${sortField}_${sortDirection}`],
       },
       fetchPolicy: "network-only",
@@ -106,6 +110,15 @@ export default function HistoryPage() {
       setReports(contextReports);
     }
   }, [data, setReports]);
+
+  // Update query when pagination or sorting changes
+  useEffect(() => {
+    refetch({
+      first: pageSize,
+      skip: (currentPage - 1) * pageSize,
+      orderBy: [`${sortField}_${sortDirection}`],
+    });
+  }, [currentPage, pageSize, sortField, sortDirection, refetch]);
 
   // Handle selection of reports for comparison
   const handleToggleSelect = (reportId: string) => {
@@ -141,6 +154,7 @@ export default function HistoryPage() {
       setSortField(field);
       setSortDirection("ASC");
     }
+    setCurrentPage(1); // Reset to first page on sort change
   };
 
   // Get sort indicator for header
@@ -149,7 +163,21 @@ export default function HistoryPage() {
     return sortDirection === "ASC" ? "↑" : "↓";
   };
 
-  if (loading) {
+  // Pagination controls
+  const handlePageChange = (page: number) => {
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (e: React.ChangeEvent<HTMLSelectElement>) => {
+    const newSize = parseInt(e.target.value);
+    setPageSize(newSize);
+    setCurrentPage(1); // Reset to first page when changing page size
+  };
+
+  const totalReports = data?.weatherReportsMeta?.count || 0;
+  const totalPages = Math.ceil(totalReports / pageSize);
+
+  if (loading && !data) {
     return (
       <div className="container py-8 max-w-5xl mx-auto flex justify-center">
         <LoadingSpinner />
@@ -168,7 +196,6 @@ export default function HistoryPage() {
   }
 
   const reports = data?.weatherReports || [];
-  const totalReports = data?.weatherReportsMeta?.count || 0;
 
   return (
     <div className="container py-8 max-w-5xl mx-auto">
@@ -177,15 +204,31 @@ export default function HistoryPage() {
       </h1>
 
       <div className="mb-8 text-center text-gray-500">
-        Showing {reports.length} of {totalReports} total reports
+        Showing {(currentPage - 1) * pageSize + 1} to{" "}
+        {Math.min(currentPage * pageSize, totalReports)} of {totalReports} total
+        reports
       </div>
 
-      {/* Action bar with compare button */}
+      {/* Action bar with compare button and page size selector */}
       <div className="flex justify-between items-center mb-6">
-        <div>
-          <span className="text-sm text-gray-500 mr-2">
+        <div className="flex items-center gap-4">
+          <span className="text-sm text-gray-500">
             {selectedReportIds.length} of 2 reports selected
           </span>
+          <div className="flex items-center">
+            <label htmlFor="pageSize" className="text-sm text-gray-500 mr-2">
+              Items per page:
+            </label>
+            <select
+              id="pageSize"
+              value={pageSize}
+              onChange={handlePageSizeChange}
+              className="border rounded px-2 py-1 text-sm"
+            >
+              <option value={5}>5</option>
+              <option value={10}>10</option>
+            </select>
+          </div>
         </div>
         <Button
           onClick={handleCompare}
@@ -266,6 +309,66 @@ export default function HistoryPage() {
           )}
         </CardContent>
       </Card>
+
+      {/* Pagination controls */}
+      {totalPages > 1 && (
+        <div className="mt-6 flex justify-center">
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => handlePageChange(Math.max(1, currentPage - 1))}
+              disabled={currentPage === 1}
+            >
+              <ChevronLeft className="h-4 w-4" />
+            </Button>
+
+            {/* Page numbers */}
+            <div className="flex gap-1">
+              {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                // Calculate page numbers to show (max 5)
+                let pageNum;
+                if (totalPages <= 5) {
+                  // Show all pages if 5 or fewer
+                  pageNum = i + 1;
+                } else if (currentPage <= 3) {
+                  // At beginning, show first 5 pages
+                  pageNum = i + 1;
+                } else if (currentPage >= totalPages - 2) {
+                  // At end, show last 5 pages
+                  pageNum = totalPages - 4 + i;
+                } else {
+                  // In middle, show current +/- 2 pages
+                  pageNum = currentPage - 2 + i;
+                }
+
+                return (
+                  <Button
+                    key={pageNum}
+                    variant={currentPage === pageNum ? "default" : "outline"}
+                    size="sm"
+                    onClick={() => handlePageChange(pageNum)}
+                    className="w-8 h-8 p-0"
+                  >
+                    {pageNum}
+                  </Button>
+                );
+              })}
+            </div>
+
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() =>
+                handlePageChange(Math.min(totalPages, currentPage + 1))
+              }
+              disabled={currentPage === totalPages}
+            >
+              <ChevronRight className="h-4 w-4" />
+            </Button>
+          </div>
+        </div>
+      )}
     </div>
   );
 }
