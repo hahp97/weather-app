@@ -4,7 +4,7 @@ import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
 import { useWeather } from "@/context/WeatherContext";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/utils/common";
 import { gql, useQuery } from "@apollo/client";
 import { useRouter } from "next/navigation";
 import { useEffect, useState } from "react";

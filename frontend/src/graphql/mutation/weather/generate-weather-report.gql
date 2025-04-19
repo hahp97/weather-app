@@ -1,0 +1,10 @@
+mutation GenerateWeatherReport($input: GenerateWeatherReportInput!) {
+  generateWeatherReport(input: $input) {
+    success
+    message
+    errors {
+      message
+    }
+    extra
+  }
+}

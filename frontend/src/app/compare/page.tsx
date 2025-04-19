@@ -9,18 +9,18 @@ import { useEffect } from "react";
 
 export default function ComparePage() {
   const { selectedReports, clearSelectedReports } = useWeather();
-  const { showInfoToast, showWarningToast } = useToast();
+  const toast = useToast();
   const router = useRouter();
 
   useEffect(() => {
     // Redirect to history if no reports selected
     if (selectedReports.length === 0) {
-      showWarningToast("Please select reports to compare");
+      toast.warning("Please select reports to compare");
       router.push("/history");
     } else if (selectedReports.length === 2) {
-      showInfoToast("Comparing the selected reports");
+      toast.info("Comparing the selected reports");
     }
-  }, [selectedReports, router, showWarningToast, showInfoToast]);
+  }, [selectedReports, router, toast]);
 
   // Don't render anything if no reports are selected (will redirect)
   if (selectedReports.length === 0) return null;
@@ -47,7 +47,7 @@ export default function ComparePage() {
             <button
               onClick={() => {
                 clearSelectedReports();
-                showInfoToast("Selection cleared");
+                toast.info("Selection cleared");
               }}
               className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
             >
@@ -75,7 +75,7 @@ export default function ComparePage() {
           <button
             onClick={() => {
               clearSelectedReports();
-              showInfoToast("Selection cleared");
+              toast.info("Selection cleared");
             }}
             className="inline-flex items-center px-4 py-2 border border-gray-300 rounded-md shadow-sm text-sm font-medium text-gray-700 bg-white hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
           >

@@ -1,0 +1,10 @@
+mutation FetchHistoricalWeather($date: DateTime!) {
+  fetchHistoricalWeatherData(date: $date) {
+    success
+    message
+    errors {
+      message
+    }
+    extra
+  }
+}

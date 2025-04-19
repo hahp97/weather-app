@@ -10,8 +10,9 @@ import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
 
-// Import GraphQL documents from the proper location
-import { GetMeGql, SIGN_IN } from "@/libs/apollo/queries";
+// Import GraphQL documents from the .gql files
+import SignInMutation from "@/graphql/mutation/auth/sign-in.gql";
+import GetMeQuery from "@/graphql/query/user/me.gql";
 
 // Define schema for login form
 const loginSchema = z.object({
@@ -35,8 +36,8 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const [signIn] = useMutation(SIGN_IN);
-  const { refetch } = useQuery(GetMeGql);
+  const [signIn] = useMutation(SignInMutation);
+  const { refetch } = useQuery(GetMeQuery);
 
   const onSubmit = async (data: LoginFormData) => {
     try {

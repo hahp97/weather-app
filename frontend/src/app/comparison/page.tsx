@@ -3,7 +3,7 @@
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDate } from "@/lib/utils";
+import { formatDate } from "@/utils/common";
 import { gql, useQuery } from "@apollo/client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";

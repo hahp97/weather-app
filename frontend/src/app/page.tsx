@@ -1,4 +1,9 @@
+import dynamic from "next/dynamic";
 import Link from "next/link";
+
+// Use dynamic import with SSR disabled for the WeatherDisplay component
+// since it uses client-side features
+const WeatherDisplay = dynamic(() => import("@/components/WeatherDisplay"));
 
 export default function Home() {
   return (
@@ -12,6 +17,11 @@ export default function Home() {
       </header>
       <main>
         <div className="max-w-7xl mx-auto sm:px-6 lg:px-8">
+          {/* Weather Display Component */}
+          <div className="px-4 py-4 sm:px-0">
+            <WeatherDisplay />
+          </div>
+
           <div className="px-4 py-8 sm:px-0">
             <div className="border-4 border-dashed border-gray-200 rounded-lg p-6 bg-white">
               <p className="mb-6 text-gray-600">

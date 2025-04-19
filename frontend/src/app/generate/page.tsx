@@ -11,53 +11,15 @@ import {
 } from "@/components/ui/popover";
 import { useToast } from "@/context/ToastContext";
 import { useWeather } from "@/context/WeatherContext";
-import { cn, formatDate } from "@/lib/utils";
-import { gql, useMutation, useQuery } from "@apollo/client";
-import { CalendarIcon } from "lucide-react";
+import { cn, formatDate } from "@/utils/common";
+import { useMutation, useQuery } from "@apollo/client";
+import { AlertTriangle, CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
-// GraphQL queries
-const CURRENT_WEATHER_QUERY = gql`
-  query CurrentWeather {
-    currentWeather {
-      id
-      timestamp
-      temperature
-      pressure
-      humidity
-      cloudCover
-      windSpeed
-      weatherCondition
-    }
-  }
-`;
-
-// GraphQL mutations
-const FETCH_HISTORICAL_WEATHER_MUTATION = gql`
-  mutation FetchHistoricalWeather($date: DateTime!) {
-    fetchHistoricalWeatherData(date: $date) {
-      success
-      message
-      errors {
-        message
-      }
-      extra
-    }
-  }
-`;
-
-const GENERATE_WEATHER_REPORT_MUTATION = gql`
-  mutation GenerateWeatherReport($input: GenerateWeatherReportInput!) {
-    generateWeatherReport(input: $input) {
-      success
-      message
-      errors {
-        message
-      }
-      extra
-    }
-  }
-`;
+// Import GraphQL files
+import FetchHistoricalWeatherMutation from "@/graphql/mutation/weather/fetch-historical-weather.gql";
+import GenerateWeatherReportMutation from "@/graphql/mutation/weather/generate-weather-report.gql";
+import CurrentWeatherQuery from "@/graphql/query/weather/current-weather.gql";
 
 interface WeatherData {
   id: string;
@@ -74,27 +36,29 @@ export default function GeneratePage() {
   const [date, setDate] = useState<Date | undefined>(undefined);
   const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
   const [isLoading, setIsLoading] = useState(false);
+  const [errorMessage, setErrorMessage] = useState<string | null>(null);
+  const [isSubscriptionError, setIsSubscriptionError] = useState(false);
 
   const { addReport } = useWeather();
   const toast = useToast();
 
   // Current Weather Query
-  const { refetch: refetchCurrentWeather } = useQuery(CURRENT_WEATHER_QUERY, {
+  const { refetch: refetchCurrentWeather } = useQuery(CurrentWeatherQuery, {
     fetchPolicy: "network-only",
     skip: true, // Don't run the query on component mount
   });
 
   // Historical Weather Mutation
-  const [fetchHistoricalWeather] = useMutation(
-    FETCH_HISTORICAL_WEATHER_MUTATION
-  );
+  const [fetchHistoricalWeather] = useMutation(FetchHistoricalWeatherMutation);
 
   // Generate Report Mutation
-  const [generateWeatherReport] = useMutation(GENERATE_WEATHER_REPORT_MUTATION);
+  const [generateWeatherReport] = useMutation(GenerateWeatherReportMutation);
 
   const handleGenerateReport = async () => {
     setIsLoading(true);
     setWeatherData(null);
+    setErrorMessage(null);
+    setIsSubscriptionError(false);
 
     try {
       if (!date) {
@@ -116,26 +80,33 @@ export default function GeneratePage() {
             setWeatherData(historicalData);
             toast.success("Historical weather data loaded");
           } else {
-            toast.error("No historical weather data available");
+            const errorMsg = "No historical weather data available";
+            setErrorMessage(errorMsg);
+            toast.error(errorMsg);
           }
         } else {
-          const errorMessage =
+          const error =
             data?.fetchHistoricalWeatherData?.errors?.[0]?.message ||
             data?.fetchHistoricalWeatherData?.message ||
             "Failed to load historical weather data";
 
-          if (errorMessage.includes("subscription")) {
-            toast.error(
-              "Historical data requires a paid OpenWeather API subscription"
-            );
+          if (error.includes("subscription") || error.includes("OpenWeather")) {
+            setIsSubscriptionError(true);
+            const subscriptionErrorMsg =
+              "Historical data requires a paid OpenWeather API subscription. Please use current weather or contact administrator to upgrade.";
+            setErrorMessage(subscriptionErrorMsg);
+            toast.error(subscriptionErrorMsg);
           } else {
-            toast.error(errorMessage);
+            setErrorMessage(error);
+            toast.error(error);
           }
         }
       }
     } catch (error) {
       console.error("Error fetching weather data:", error);
-      toast.error("Failed to fetch weather data");
+      const errorMsg = "Failed to fetch weather data. Please try again later.";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -169,18 +140,23 @@ export default function GeneratePage() {
           addReport(reportData);
           toast.success("Weather report saved successfully");
         } else {
-          toast.error("Report generated but no data was returned");
+          const errorMsg = "Report generated but no data was returned";
+          setErrorMessage(errorMsg);
+          toast.error(errorMsg);
         }
       } else {
-        const errorMessage =
+        const error =
           data?.generateWeatherReport?.errors?.[0]?.message ||
           data?.generateWeatherReport?.message ||
           "Failed to generate weather report";
-        toast.error(errorMessage);
+        setErrorMessage(error);
+        toast.error(error);
       }
     } catch (error) {
       console.error("Error generating weather report:", error);
-      toast.error("Failed to generate weather report");
+      const errorMsg = "Failed to generate weather report";
+      setErrorMessage(errorMsg);
+      toast.error(errorMsg);
     } finally {
       setIsLoading(false);
     }
@@ -243,6 +219,20 @@ export default function GeneratePage() {
               Generate
             </Button>
           </div>
+
+          {isSubscriptionError && (
+            <div className="mt-4 p-3 bg-amber-50 border border-amber-200 rounded-md flex items-start">
+              <AlertTriangle className="h-5 w-5 text-amber-500 mr-2 flex-shrink-0 mt-0.5" />
+              <div className="text-sm text-amber-800">
+                <p className="font-medium">Subscription Required</p>
+                <p>
+                  Historical weather data requires a paid OpenWeather API
+                  subscription. Please use current weather data instead or
+                  contact administrator.
+                </p>
+              </div>
+            </div>
+          )}
         </CardContent>
       </Card>
 
@@ -250,6 +240,17 @@ export default function GeneratePage() {
         <div className="flex justify-center my-12">
           <LoadingSpinner />
         </div>
+      )}
+
+      {errorMessage && !isLoading && !isSubscriptionError && (
+        <Card className="mb-8 border-red-200 bg-red-50">
+          <CardContent className="pt-6">
+            <div className="flex items-start">
+              <AlertTriangle className="h-5 w-5 text-red-500 mr-2 flex-shrink-0 mt-0.5" />
+              <p className="text-red-700">{errorMessage}</p>
+            </div>
+          </CardContent>
+        </Card>
       )}
 
       {weatherData && !isLoading && (

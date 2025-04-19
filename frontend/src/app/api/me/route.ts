@@ -1,5 +1,5 @@
+import GetMeGql from "@/graphql/query/user/me.gql";
 import { createApolloClient } from "@/libs/apollo/client";
-import { GetMeGql } from "@/libs/apollo/queries";
 import { getConfigs } from "@/utils/configs";
 import { NextRequest, NextResponse } from "next/server";
 

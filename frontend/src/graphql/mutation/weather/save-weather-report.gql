@@ -1,0 +1,14 @@
+mutation SaveWeatherReport($input: WeatherReportInput!) {
+  saveWeatherReport(input: $input) {
+    success
+    message
+    report {
+      id
+      timestamp
+      temperature
+      pressure
+      humidity
+      cloudCover
+    }
+  }
+}
