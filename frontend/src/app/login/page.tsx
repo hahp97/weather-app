@@ -25,7 +25,7 @@ export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
   const { setUser } = useUser();
-  const { showSuccessToast, showErrorToast } = useToast();
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
 
   const {
     register,
@@ -124,6 +124,14 @@ export default function LoginPage() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+              <div className="flex justify-end mt-1">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                >
+                  Forgot your password?
+                </Link>
               </div>
             </div>
 

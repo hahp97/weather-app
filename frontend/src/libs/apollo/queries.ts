@@ -72,3 +72,72 @@ export const SIGN_IN = gql`
     }
   }
 `;
+
+export const SIGN_UP = gql`
+  mutation SignUp($input: SignUpInput!) {
+    signUp(input: $input) {
+      success
+      message
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const FORGOT_PASSWORD = gql`
+  mutation ForgotPassword($email: String!, $callbackUrl: String!) {
+    forgotPassword(email: $email, callbackUrl: $callbackUrl) {
+      success
+      message
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const SEND_OTP = gql`
+  mutation SendOTP($email: String!) {
+    sendOTP(email: $email) {
+      success
+      message
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const VERIFY_OTP = gql`
+  mutation VerifyOTP($input: VerifyOTPInput!) {
+    verifyOTP(input: $input) {
+      success
+      message
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;
+
+export const RESET_PASSWORD_WITH_OTP = gql`
+  mutation ResetPasswordWithOTP(
+    $email: String!
+    $otp: String!
+    $newPassword: String!
+  ) {
+    resetPasswordWithOTP(email: $email, otp: $otp, newPassword: $newPassword) {
+      success
+      message
+      errors {
+        field
+        message
+      }
+    }
+  }
+`;

@@ -10,7 +10,7 @@ import {
 import type { AppContext } from "@/types";
 import buildPrismaFilter from "@/utils/buildPrismaFilter";
 import { getConfigs } from "@/utils/configs";
-import { generateOTP, saveOTP, verifyOTPFromDB } from "@/utils/otp";
+import { generateOTP, saveOTP, verifyOTPFromDB, verifyTOTP } from "@/utils/otp";
 import { comparePassword, hashPassword } from "@/utils/password";
 import pubsub from "@/utils/pubsub";
 import { normalizeQueryArgs } from "@/utils/query";
@@ -512,7 +512,7 @@ export default {
         await jobs.perform(
           { id: "email-job" },
           {
-            email: "reset-password-otp-email",
+            email: "reset-password-email",
             subject: "Reset Your Password",
             to: email,
             user,
@@ -745,7 +745,7 @@ export default {
         await jobs.perform(
           { id: "email-job" },
           {
-            email: "otp-email",
+            email: "otp-verification-email",
             subject: "Verify Your Email",
             to: data.email,
             user: newUser,
@@ -861,7 +861,7 @@ export default {
         await jobs.perform(
           { id: "email-job" },
           {
-            email: "otp-email",
+            email: "otp-verification-email",
             subject: "Your Verification Code",
             to: email,
             user,

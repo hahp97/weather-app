@@ -1,10 +1,8 @@
 "use server";
 
 import { getServerTokens } from "@/action/auth";
-import { createApolloClient } from "@/libs/apollo/client";
+import { getApolloClient } from "@/libs/apollo/client";
 import { GetMeGql } from "@/libs/apollo/queries";
-import { getConfigs } from "@/utils/configs";
-import { ApolloClient } from "@apollo/client";
 import { RedirectType, redirect } from "next/navigation";
 
 export async function checkAuthentication() {
@@ -56,12 +54,4 @@ export async function ssrGetMe() {
     console.log("[SERVER ERROR] getMe", error);
   }
   return me;
-}
-
-let apolloClient: ApolloClient<Record<string, unknown>>;
-
-function getApolloClient() {
-  if (apolloClient) return apolloClient;
-  apolloClient = createApolloClient({ ssr: true, config: getConfigs() });
-  return apolloClient;
 }
