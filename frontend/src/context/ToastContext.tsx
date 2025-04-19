@@ -5,7 +5,6 @@ import { Toaster, toast } from "sonner";
 
 export type ToastType = "success" | "error" | "info" | "warning";
 
-// Trả về toast object từ sonner
 export function useToast() {
   return toast;
 }
@@ -13,7 +12,7 @@ export function useToast() {
 export function ToastProvider({ children }: { children: ReactNode }) {
   return (
     <>
-      <Toaster position="top-right" richColors />
+      <Toaster position="top-right" richColors closeButton />
       {children}
     </>
   );

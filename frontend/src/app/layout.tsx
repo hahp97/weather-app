@@ -1,15 +1,10 @@
-import { Navbar } from "@/components/layout/Navbar";
+import { Footer } from "@/components/Footer";
+import { NavBar } from "@/components/Navbar";
 import { ToastProvider } from "@/context/ToastContext";
 import { UserProvider } from "@/context/UserContext";
 import { WeatherProvider } from "@/context/WeatherContext";
 import { ApolloWrapper } from "@/libs/apollo/provider";
-import type { Metadata } from "next";
 import "./globals.css";
-
-export const metadata: Metadata = {
-  title: "Weather Report System",
-  description: "Changi Airport Weather Report System",
-};
 
 export default function RootLayout({
   children,
@@ -18,15 +13,16 @@ export default function RootLayout({
 }) {
   return (
     <html lang="en">
-      <body className="min-h-screen bg-gray-50">
+      <body className="bg-gray-50 no-scrollbar flex flex-col min-h-screen">
         <ApolloWrapper>
           <ToastProvider>
             <UserProvider>
               <WeatherProvider>
-                <Navbar />
-                <main className="max-w-7xl mx-auto py-6 sm:px-6 lg:px-8">
-                  {children}
-                </main>
+                <div className="sticky top-0 z-50">
+                  <NavBar />
+                </div>
+                <main className="flex-grow">{children}</main>
+                <Footer />
               </WeatherProvider>
             </UserProvider>
           </ToastProvider>

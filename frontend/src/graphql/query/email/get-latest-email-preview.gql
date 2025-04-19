@@ -1,0 +1,7 @@
+query GetLatestEmailPreview($email: String!) {
+  getLatestEmailPreview(email: $email) {
+    previewUrl
+    subject
+    timestamp
+  }
+}

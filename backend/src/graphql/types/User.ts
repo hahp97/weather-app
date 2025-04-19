@@ -13,6 +13,16 @@ type User {
   mobile: PhoneNumberObject
   active: Boolean
   superAdmin: Boolean
+
+}
+
+# Email Preview for development with Ethereal
+type EmailPreview {
+  to: String!
+  subject: String!
+  previewUrl: String!
+  messageId: String!
+  timestamp: Float!
 }
 
 enum UserOrder {
@@ -53,6 +63,10 @@ type Query {
   resetPasswordInfo(code: String!): CommonResponse
   createPasswordInfo(code:String!) : CommonResponse
   verifyEmail(token: String!): CommonResponse
+  
+  # Email preview queries (for development only)
+  getEmailPreviews(email: String!): [EmailPreview]
+  getLatestEmailPreview(email: String!): EmailPreview
 }
 
 input merchantRole {

@@ -13,8 +13,6 @@ model User {
 
     superAdmin Boolean @default(false)
 
-    weatherReports WeatherReport[]
-
     createdAt DateTime  @default(now())
     updatedAt DateTime? @updatedAt
     deletedAt DateTime?

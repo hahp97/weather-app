@@ -1,6 +1,6 @@
 "use client";
 
-import { GetMeGql } from "@/libs/apollo/queries";
+import GetMeQuery from "@/graphql/query/user/me.gql";
 import { ApolloError, useQuery } from "@apollo/client";
 import {
   createContext,
@@ -33,22 +33,28 @@ interface UserContextType {
   error: ApolloError | null;
   setUser: (user: User | null) => void;
   logout: () => void;
+  initialized: boolean;
 }
 
 const UserContext = createContext<UserContextType | undefined>(undefined);
 
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [initialized, setInitialized] = useState(false);
 
-  const { loading, error, data } = useQuery(GetMeGql, {
+  const { loading, error, data } = useQuery(GetMeQuery, {
     fetchPolicy: "network-only",
   });
 
   useEffect(() => {
-    if (data?.me) {
-      setUser(data.me);
+    if (!loading) {
+      // Mark as initialized when loading is complete, whether user was found or not
+      setInitialized(true);
+      if (data?.me) {
+        setUser(data.me);
+      }
     }
-  }, [data]);
+  }, [loading, data]);
 
   const logout = () => {
     // Clear tokens from cookies or localStorage
@@ -68,6 +74,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
         error: error || null,
         setUser,
         logout,
+        initialized,
       }}
     >
       {children}

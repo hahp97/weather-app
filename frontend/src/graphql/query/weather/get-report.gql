@@ -1,7 +1,7 @@
 #import '../../fragment/WeatherReportFragment.gql'
 
-query GetWeatherReport($date: String) {
-  weatherReport(date: $date) {
+query GetWeatherReport($id: ID!) {
+  weatherReport(id: $id) {
     ...WeatherReportFragment
   }
 }

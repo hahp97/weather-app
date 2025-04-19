@@ -1,0 +1,29 @@
+query GetWeatherDataInRange(
+  $range: DateRangeInput!
+  $first: Int
+  $skip: Int
+  $sortField: String
+  $sortOrder: String
+) {
+  weatherDataInRange(
+    range: $range
+    first: $first
+    skip: $skip
+    sortField: $sortField
+    sortOrder: $sortOrder
+  ) {
+    id
+    timestamp
+    temperature
+    pressure
+    humidity
+    cloudCover
+    windSpeed
+    weatherCondition
+    createdAt
+  }
+
+  weatherDataMeta(range: $range) {
+    count
+  }
+}

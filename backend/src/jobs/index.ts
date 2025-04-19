@@ -1,3 +1,4 @@
+import backgroundJobs from "./background";
 import EmailJob from "./mailer/index";
 
 class JobManager {
@@ -26,6 +27,14 @@ class JobManager {
       console.error(`Error performing job ${id}:`, error);
     }
   }
+
+  /**
+   * Lấy tất cả các background jobs
+   */
+  getBackgroundJobs() {
+    return backgroundJobs;
+  }
 }
 
+export { backgroundJobs };
 export default new JobManager();

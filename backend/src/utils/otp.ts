@@ -212,14 +212,16 @@ export const validateOtp = ({
  * Setup a cron job to clean up expired OTPs
  * Deletes OTPs older than 15 minutes
  */
-export async function cleanupExpiredOTPs(): Promise<void> {
+export async function cleanupExpiredOTPs(): Promise<{ deletedCount: number }> {
   const fifteenMinutesAgo = new Date(Date.now() - 15 * 60 * 1000);
 
-  await prisma.oTP.deleteMany({
+  const result = await prisma.oTP.deleteMany({
     where: {
       createdAt: {
         lt: fifteenMinutesAgo,
       },
     },
   });
+
+  return { deletedCount: result.count };
 }

@@ -1,258 +1,255 @@
 "use client";
 
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { AuthModal } from "@/components/modal/AuthModal";
 import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardHeader } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { useWeather } from "@/context/WeatherContext";
-import { formatDate } from "@/lib/utils";
-import { gql, useQuery } from "@apollo/client";
-import { useRouter } from "next/navigation";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
+import { WeatherDataTable } from "@/components/weather/WeatherDataTable";
+import { useToast } from "@/context/ToastContext";
+import { useUser } from "@/context/UserContext";
+import { useWeather, WeatherReport } from "@/context/WeatherContext";
+import GetWeatherReportsQuery from "@/graphql/query/weather/get-reports.gql";
+import { UTCToLocalDate } from "@/utils/common";
+import { useQuery } from "@apollo/client";
+import Link from "next/link";
 import { useEffect, useState } from "react";
 
-// Define interfaces
-interface BackendWeatherReport {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  avgTemperature: number;
-  avgPressure: number;
-  avgHumidity: number;
-  avgCloudCover: number;
-  dataPointsCount: number;
-  createdAt: string;
-}
-
-interface WeatherReportsMeta {
-  count: number;
-}
-
-interface QueryResult {
-  weatherReports: BackendWeatherReport[];
-  weatherReportsMeta: WeatherReportsMeta;
-}
-
-// GraphQL query
-const GET_WEATHER_REPORTS_QUERY = gql`
-  query GetWeatherReports(
-    $first: Int
-    $skip: Int
-    $filter: WeatherReportFilter
-    $orderBy: [WeatherReportOrder]
-  ) {
-    weatherReports(
-      first: $first
-      skip: $skip
-      filter: $filter
-      orderBy: $orderBy
-    ) {
-      id
-      title
-      startTime
-      endTime
-      avgTemperature
-      avgPressure
-      avgHumidity
-      avgCloudCover
-      dataPointsCount
-      createdAt
-    }
-    weatherReportsMeta {
-      count
-    }
-  }
-`;
-
 export default function HistoryPage() {
-  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
-  const [sortField, setSortField] = useState<string>("createdAt");
-  const [sortDirection, setSortDirection] = useState<"ASC" | "DESC">("DESC");
-  const router = useRouter();
+  const { user, loading: userLoading, initialized } = useUser();
   const { setReports } = useWeather();
+  const toast = useToast();
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
-  // Query for weather reports
-  const { data, loading, error } = useQuery<QueryResult>(
-    GET_WEATHER_REPORTS_QUERY,
-    {
-      variables: {
-        first: 100,
-        orderBy: [`${sortField}_${sortDirection}`],
-      },
-      fetchPolicy: "network-only",
+  const [currentPage, setCurrentPage] = useState(1);
+  const [pageSize, setPageSize] = useState(10);
+  const [sortOrder, setSortOrder] = useState<string>("createdAt_DESC");
+  const [sortField, setSortField] = useState<string>("createdAt");
+
+  const [selectedReportIds, setSelectedReportIds] = useState<string[]>([]);
+
+  // Only show auth modal if initialization is complete and user is not logged in
+  useEffect(() => {
+    if (initialized && !user) {
+      setShowAuthModal(true);
     }
-  );
+  }, [user, initialized]);
+
+  const {
+    loading: reportsLoading,
+    error: reportsError,
+    data: reportsData,
+  } = useQuery(GetWeatherReportsQuery, {
+    variables: {
+      first: pageSize,
+      skip: (currentPage - 1) * pageSize,
+      orderBy: [sortOrder],
+      filter: {
+        userId: user?.id,
+      },
+    },
+    fetchPolicy: "network-only",
+    skip: !user,
+  });
 
   useEffect(() => {
-    // Update reports in context when data changes
-    if (data?.weatherReports) {
-      // Convert backend report format to context format
-      const contextReports = data.weatherReports.map((report) => ({
-        id: report.id,
-        timestamp: report.createdAt,
-        temperature: report.avgTemperature,
-        pressure: report.avgPressure,
-        humidity: report.avgHumidity,
-        cloudCover: report.avgCloudCover,
-      }));
-      setReports(contextReports);
+    if (reportsData?.weatherReports) {
+      setReports(reportsData.weatherReports);
     }
-  }, [data, setReports]);
+  }, [reportsData, setReports]);
 
-  // Handle selection of reports for comparison
+  const toggleSortOrder = () => {
+    const newOrder =
+      sortOrder === "createdAt_DESC" ? "createdAt_ASC" : "createdAt_DESC";
+    setSortOrder(newOrder);
+    setCurrentPage(1);
+  };
+
+  const handleSortFieldChange = (field: string) => {
+    // GraphQL query expects field_ORDER format
+    const baseName = field === "timestamp" ? "createdAt" : field;
+    setSortField(baseName);
+    setSortOrder(`${baseName}_${sortOrder.endsWith("DESC") ? "DESC" : "ASC"}`);
+  };
+
+  const handlePageChange = (page: number) => {
+    if (
+      page < 1 ||
+      (reportsData?.weatherReportsMeta &&
+        page > Math.ceil(reportsData.weatherReportsMeta.count / pageSize))
+    )
+      return;
+    setCurrentPage(page);
+  };
+
+  const handlePageSizeChange = (size: number) => {
+    setPageSize(size);
+    setCurrentPage(1);
+  };
+
   const handleToggleSelect = (reportId: string) => {
     setSelectedReportIds((prev) => {
       if (prev.includes(reportId)) {
         return prev.filter((id) => id !== reportId);
       } else {
-        // Only allow selecting up to 2 reports
         if (prev.length >= 2) {
-          return [prev[1], reportId]; // Keep the second selected report and add the new one
+          return [prev[1], reportId];
         }
         return [...prev, reportId];
       }
     });
   };
 
-  // Handle comparison of selected reports
-  const handleCompare = () => {
-    if (selectedReportIds.length !== 2) {
-      return;
-    }
+  const totalReports = reportsData?.weatherReportsMeta?.count || 0;
+  const totalPages = Math.ceil(totalReports / pageSize);
 
-    router.push(
-      `/comparison?report1=${selectedReportIds[0]}&report2=${selectedReportIds[1]}`
-    );
+  // Transform the reports data into the format expected by WeatherDataTable
+  // and convert UTC timestamps to local time
+  const mapReportsToDataPoints = (reports: WeatherReport[]) => {
+    return reports.map((report) => {
+      // Convert UTC timestamp to local time
+      const localTimestamp = report.createdAt
+        ? UTCToLocalDate(report.createdAt)
+        : new Date();
+
+      return {
+        id: report.id,
+        timestamp: localTimestamp.toISOString(), // Pass as ISO string
+        temperature: report.avgTemperature,
+        humidity: report.avgHumidity || 0,
+        pressure: report.avgPressure || 0,
+        weatherCondition: report.title || "",
+        windSpeed: report.avgWindSpeed,
+        selected: selectedReportIds.includes(report.id),
+        cloudCover: report.cloudCover || 0,
+      };
+    });
   };
 
-  // Handle sort toggle
-  const handleSort = (field: string) => {
-    if (field === sortField) {
-      setSortDirection((prev) => (prev === "ASC" ? "DESC" : "ASC"));
-    } else {
-      setSortField(field);
-      setSortDirection("ASC");
-    }
+  const errorMessage = reportsError ? reportsError.message : null;
+
+  // Handle click on a report row to view details
+  const handleRowClick = (reportId: string) => {
+    window.location.href = `/history/${reportId}`;
   };
 
-  // Get sort indicator for header
-  const getSortIndicator = (field: string) => {
-    if (field !== sortField) return null;
-    return sortDirection === "ASC" ? "↑" : "↓";
+  // Custom row action for the WeatherDataTable
+  const onRowAction = (dataPoint: WeatherData) => {
+    handleToggleSelect(dataPoint.id);
+    return false; // Prevent default action
   };
-
-  if (loading) {
-    return (
-      <div className="container py-8 max-w-5xl mx-auto flex justify-center">
-        <LoadingSpinner />
-      </div>
-    );
-  }
-
-  if (error) {
-    return (
-      <div className="container py-8 max-w-5xl mx-auto">
-        <div className="text-red-500">
-          Error loading weather reports: {error.message}
-        </div>
-      </div>
-    );
-  }
-
-  const reports = data?.weatherReports || [];
-  const totalReports = data?.weatherReportsMeta?.count || 0;
 
   return (
-    <div className="container py-8 max-w-5xl mx-auto">
-      <h1 className="text-3xl font-bold mb-2 text-center">
-        Weather Report History
-      </h1>
+    <div className="container mx-auto px-4 py-8">
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        returnUrl="/history"
+        featureName="History"
+      />
 
-      <div className="mb-8 text-center text-gray-500">
-        Showing {reports.length} of {totalReports} total reports
-      </div>
-
-      {/* Action bar with compare button */}
-      <div className="flex justify-between items-center mb-6">
-        <div>
-          <span className="text-sm text-gray-500 mr-2">
-            {selectedReportIds.length} of 2 reports selected
-          </span>
-        </div>
-        <Button
-          onClick={handleCompare}
-          disabled={selectedReportIds.length !== 2}
-        >
-          Compare Selected Reports
-        </Button>
-      </div>
-
-      {/* Table of reports */}
       <Card>
-        <CardHeader className="bg-gray-50">
-          <div className="grid grid-cols-12 gap-4 text-sm font-medium text-gray-500">
-            <div className="col-span-1"></div>
-            <div
-              className="col-span-3 flex items-center cursor-pointer"
-              onClick={() => handleSort("title")}
-            >
-              Title {getSortIndicator("title")}
-            </div>
-            <div
-              className="col-span-2 flex items-center cursor-pointer"
-              onClick={() => handleSort("createdAt")}
-            >
-              Date {getSortIndicator("createdAt")}
-            </div>
-            <div className="col-span-1 text-center">Temp (°C)</div>
-            <div className="col-span-1 text-center">Press (hPa)</div>
-            <div className="col-span-1 text-center">Humid (%)</div>
-            <div className="col-span-1 text-center">Cloud (%)</div>
-            <div className="col-span-2 text-center">Data Points</div>
-          </div>
-        </CardHeader>
-        <CardContent className="p-0">
-          {reports.length === 0 ? (
-            <div className="text-center p-8 text-gray-500">
-              No weather reports found. Generate some reports first!
-            </div>
-          ) : (
-            <div className="divide-y">
-              {reports.map((report: BackendWeatherReport) => (
-                <div
-                  key={report.id}
-                  className="grid grid-cols-12 gap-4 p-4 hover:bg-gray-50"
+        <CardHeader>
+          <CardTitle className="flex justify-between items-center">
+            <span className="text-2xl font-bold">Weather Report History</span>
+            <div className="flex items-center space-x-2">
+              <Link href="/generate">
+                <Button size="sm" variant="outline">
+                  View Data and Generate
+                </Button>
+              </Link>
+              <Link
+                href={
+                  selectedReportIds.length === 2
+                    ? `/comparison?report1=${selectedReportIds[0]}&report2=${selectedReportIds[1]}`
+                    : "#"
+                }
+                onClick={(e) => {
+                  if (selectedReportIds.length !== 2) {
+                    e.preventDefault();
+                    toast.error("Please select exactly 2 reports to compare");
+                  }
+                }}
+              >
+                <Button
+                  size="sm"
+                  variant={
+                    selectedReportIds.length === 2 ? "default" : "outline"
+                  }
+                  disabled={selectedReportIds.length !== 2}
                 >
-                  <div className="col-span-1 flex items-center">
-                    <input
-                      type="checkbox"
-                      checked={selectedReportIds.includes(report.id)}
-                      onChange={() => handleToggleSelect(report.id)}
-                      className="h-4 w-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
-                    />
-                  </div>
-                  <div className="col-span-3 flex items-center font-medium">
-                    {report.title}
-                  </div>
-                  <div className="col-span-2 flex items-center text-sm text-gray-600">
-                    {formatDate(report.createdAt)}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-center">
-                    {report.avgTemperature?.toFixed(1)}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-center">
-                    {report.avgPressure?.toFixed(0)}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-center">
-                    {report.avgHumidity?.toFixed(0)}
-                  </div>
-                  <div className="col-span-1 flex items-center justify-center">
-                    {report.avgCloudCover?.toFixed(0)}
-                  </div>
-                  <div className="col-span-2 flex items-center justify-center text-sm text-gray-600">
-                    {report.dataPointsCount || 0}
-                  </div>
-                </div>
-              ))}
+                  Compare Selected
+                </Button>
+              </Link>
+            </div>
+          </CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex items-center space-x-4 bg-gray-100 p-4 rounded-md shadow-sm my-4">
+            <span className="text-lg font-semibold text-gray-700">
+              Saved Weather Reports
+            </span>
+            <span className="text-sm font-medium text-blue-600 bg-blue-100 px-2 py-1 rounded-full">
+              {selectedReportIds.length} of 2 reports selected
+            </span>
+          </div>
+          {userLoading ? (
+            <div className="flex justify-center py-8">
+              <LoadingSpinner />
+            </div>
+          ) : user ? (
+            reportsData?.weatherReports &&
+            reportsData.weatherReports.length > 0 ? (
+              <WeatherDataTable
+                isLoading={reportsLoading}
+                errorMessage={errorMessage}
+                historicalDataPoints={mapReportsToDataPoints(
+                  reportsData.weatherReports
+                )}
+                currentPage={currentPage}
+                totalPages={totalPages}
+                pageSize={pageSize}
+                totalItems={totalReports}
+                sortField={sortField}
+                sortOrder={sortOrder.endsWith("DESC") ? "desc" : "asc"}
+                onPageChange={handlePageChange}
+                onPageSizeChange={handlePageSizeChange}
+                onSortFieldChange={handleSortFieldChange}
+                onToggleSortOrder={toggleSortOrder}
+                showSaveAction={false}
+                title="Saved Weather Reports"
+                onRowAction={onRowAction}
+                onRowClick={handleRowClick}
+              />
+            ) : (
+              <div className="py-8 text-center text-gray-500">
+                <p className="text-lg mb-2">
+                  You don&apos;t have any saved reports yet.
+                </p>
+                <p className="mb-4">
+                  Generate a weather report to see your historical data here.
+                </p>
+                <Link href="/generate" className="inline-block">
+                  <Button variant="default">Generate Your First Report</Button>
+                </Link>
+              </div>
+            )
+          ) : (
+            <div className="py-8 text-center text-gray-500">
+              <p className="text-lg mb-2">
+                Please log in to view your saved reports.
+              </p>
+              <p className="mb-4">
+                Login or create an account to save and manage your weather
+                reports.
+              </p>
+              <Button
+                onClick={() => setShowAuthModal(true)}
+                className="mt-4"
+                variant="default"
+              >
+                Sign In or Register
+              </Button>
             </div>
           )}
         </CardContent>
