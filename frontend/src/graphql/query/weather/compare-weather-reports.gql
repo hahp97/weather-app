@@ -1,0 +1,35 @@
+query CompareWeatherReports($reportId1: ID!, $reportId2: ID!) {
+  compareWeatherReports(reportId1: $reportId1, reportId2: $reportId2) {
+    report1 {
+      id
+      title
+      startTime
+      endTime
+      avgTemperature
+      avgPressure
+      avgHumidity
+      avgCloudCover
+      dataPointsCount
+      createdAt
+    }
+    report2 {
+      id
+      title
+      startTime
+      endTime
+      avgTemperature
+      avgPressure
+      avgHumidity
+      avgCloudCover
+      dataPointsCount
+      createdAt
+    }
+    deviations {
+      temperature
+      pressure
+      humidity
+      cloudCover
+      windSpeed
+    }
+  }
+}

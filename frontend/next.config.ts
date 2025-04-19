@@ -1,11 +1,8 @@
 /** @type {import('next').NextConfig} */
-
-import type { NextConfig } from "next";
+import CaseSensitivePathsPlugin from "case-sensitive-paths-webpack-plugin";
 import type { Configuration } from "webpack";
 
-//
-
-const nextConfig: NextConfig = {
+const nextConfig = {
   output: "standalone",
   images: {
     remotePatterns: [
@@ -21,7 +18,7 @@ const nextConfig: NextConfig = {
     },
   },
   poweredByHeader: false,
-  webpack(config: Configuration): Configuration {
+  webpack(config: Configuration) {
     if (!config.module) config.module = { rules: [] };
     if (!config.module.rules) config.module.rules = [];
 
@@ -30,6 +27,9 @@ const nextConfig: NextConfig = {
       exclude: /node_modules/,
       loader: "graphql-tag/loader",
     });
+
+    if (!config.plugins) config.plugins = [];
+    config.plugins = [new CaseSensitivePathsPlugin(), ...config.plugins];
 
     return config;
   },

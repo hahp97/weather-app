@@ -1,0 +1,10 @@
+query GetWeatherReports {
+  weatherReports {
+    id
+    timestamp
+    temperature
+    pressure
+    humidity
+    cloudCover
+  }
+}

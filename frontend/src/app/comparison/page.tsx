@@ -1,88 +1,36 @@
 "use client";
 
+import { LoadingSpinner } from "@/components/LoadingSpinner";
+import { AuthModal } from "@/components/modal/AuthModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { formatDate } from "@/lib/utils";
-import { gql, useQuery } from "@apollo/client";
+import { useUser } from "@/context/UserContext";
+import GqlCompareWeatherReports from "@/graphql/query/weather/compare-weather-reports.gql";
+import { formatDate } from "@/utils/common";
+import { useQuery } from "@apollo/client";
 import Link from "next/link";
 import { useSearchParams } from "next/navigation";
 import { useEffect, useState } from "react";
 
-// GraphQL query to compare weather reports
-const COMPARE_WEATHER_REPORTS_QUERY = gql`
-  query CompareWeatherReports($reportId1: ID!, $reportId2: ID!) {
-    compareWeatherReports(reportId1: $reportId1, reportId2: $reportId2) {
-      report1 {
-        id
-        title
-        startTime
-        endTime
-        avgTemperature
-        avgPressure
-        avgHumidity
-        avgCloudCover
-        dataPointsCount
-        createdAt
-      }
-      report2 {
-        id
-        title
-        startTime
-        endTime
-        avgTemperature
-        avgPressure
-        avgHumidity
-        avgCloudCover
-        dataPointsCount
-        createdAt
-      }
-      deviations {
-        temperature
-        pressure
-        humidity
-        cloudCover
-        windSpeed
-      }
-    }
-  }
-`;
-
-interface BackendReport {
-  id: string;
-  title: string;
-  startTime: string;
-  endTime: string;
-  avgTemperature: number;
-  avgPressure: number;
-  avgHumidity: number;
-  avgCloudCover: number;
-  dataPointsCount: number;
-  createdAt: string;
-}
-
-interface ComparisonData {
-  report1: BackendReport;
-  report2: BackendReport;
-  deviations: {
-    temperature: number;
-    pressure: number;
-    humidity: number;
-    cloudCover: number;
-    windSpeed: number;
-  };
-}
-
 export default function ComparisonPage() {
+  const { user, loading: userLoading } = useUser();
   const searchParams = useSearchParams();
   const [comparisonData, setComparisonData] = useState<ComparisonData | null>(
     null
   );
+  const [showAuthModal, setShowAuthModal] = useState(false);
 
   const report1Id = searchParams.get("report1");
   const report2Id = searchParams.get("report2");
 
-  const { data, loading, error } = useQuery(COMPARE_WEATHER_REPORTS_QUERY, {
+  // Show auth modal if user is not authenticated
+  useEffect(() => {
+    if (!userLoading && !user) {
+      setShowAuthModal(true);
+    }
+  }, [user, userLoading]);
+
+  const { data, loading, error } = useQuery(GqlCompareWeatherReports, {
     variables: {
       reportId1: report1Id,
       reportId2: report2Id,
@@ -96,6 +44,15 @@ export default function ComparisonPage() {
       setComparisonData(data.compareWeatherReports);
     }
   }, [data]);
+
+  // If still loading user, show loading state
+  if (userLoading) {
+    return (
+      <div className="container py-8 max-w-4xl mx-auto flex justify-center">
+        <LoadingSpinner />
+      </div>
+    );
+  }
 
   if (!report1Id || !report2Id) {
     return (
@@ -155,6 +112,14 @@ export default function ComparisonPage() {
 
   return (
     <div className="container py-8 max-w-4xl mx-auto">
+      {/* Authentication Modal */}
+      <AuthModal
+        isOpen={showAuthModal}
+        onClose={() => setShowAuthModal(false)}
+        returnUrl="/comparison"
+        featureName="Compare Weather Reports"
+      />
+
       <h1 className="text-3xl font-bold mb-2 text-center">
         Weather Report Comparison
       </h1>

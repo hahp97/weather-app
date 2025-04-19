@@ -17,14 +17,16 @@ export function WeatherCard({
   const { selectReport, deselectReport } = useWeather();
   const { timestamp, temperature, pressure, humidity, cloudCover } = report;
 
-  const formattedDate = new Date(timestamp).toLocaleString("en-US", {
-    year: "numeric",
-    month: "short",
-    day: "numeric",
-    hour: "2-digit",
-    minute: "2-digit",
-    second: "2-digit",
-  });
+  const formattedDate = timestamp
+    ? new Date(timestamp).toLocaleString("en-US", {
+        year: "numeric",
+        month: "short",
+        day: "numeric",
+        hour: "2-digit",
+        minute: "2-digit",
+        second: "2-digit",
+      })
+    : "No timestamp available";
 
   const handleSelect = () => {
     if (isSelected) {

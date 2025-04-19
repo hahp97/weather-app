@@ -57,9 +57,31 @@ export default {
       }
     },
 
-    weatherDataInRange: async (_: any, { range }: { range: DateRangeInput }) => {
+    weatherDataInRange: async (
+      _: any,
+      {
+        range,
+        first,
+        skip,
+        sortField,
+        sortOrder,
+      }: {
+        range: DateRangeInput;
+        first?: number;
+        skip?: number;
+        sortField?: string;
+        sortOrder?: string;
+      }
+    ) => {
       try {
-        return await weatherService.getWeatherDataInRange(new Date(range.startTime), new Date(range.endTime));
+        return await weatherService.getWeatherDataInRange(
+          new Date(range.startTime),
+          new Date(range.endTime),
+          first || 100,
+          skip || 0,
+          sortField || "ts",
+          sortOrder || "desc"
+        );
       } catch (error) {
         console.error("Error fetching weather data range:", error);
         throw new GraphQLError("Failed to fetch weather data for the specified range", {
@@ -138,6 +160,18 @@ export default {
       } catch (error) {
         console.error("Error comparing weather reports:", error);
         throw new GraphQLError("Failed to compare weather reports", {
+          extensions: { code: "INTERNAL_SERVER_ERROR" },
+        });
+      }
+    },
+
+    weatherDataMeta: async (_: any, { range }: { range: DateRangeInput }) => {
+      try {
+        const count = await weatherService.countWeatherData(new Date(range.startTime), new Date(range.endTime));
+        return { count };
+      } catch (error) {
+        console.error("Error fetching weather data meta:", error);
+        throw new GraphQLError("Failed to fetch weather data meta", {
           extensions: { code: "INTERNAL_SERVER_ERROR" },
         });
       }

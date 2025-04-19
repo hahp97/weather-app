@@ -118,7 +118,7 @@ type Query {
   currentWeather: WeatherData
   
   # Get weather data for a time range
-  weatherDataInRange(range: DateRangeInput!): [WeatherData]
+  weatherDataInRange(range: DateRangeInput!, first: Int, skip: Int, sortField: String, sortOrder: String): [WeatherData]
   
   # Get aggregated weather data (for charts)
   aggregatedWeatherData(aggregation: AggregationInput!): [AggregatedWeatherData]
@@ -129,6 +129,9 @@ type Query {
   # Get all weather reports with optional filtering and pagination
   weatherReports(first: Int, skip: Int, filter: WeatherReportFilter, orderBy: [WeatherReportOrder]): [WeatherReport]
   weatherReportsMeta(filter: WeatherReportFilter): ObjectMeta
+  
+  # Get weather data meta information (count)
+  weatherDataMeta(range: DateRangeInput!): ObjectMeta
   
   # Get a specific weather report
   weatherReport(id: ID!): WeatherReport

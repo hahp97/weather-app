@@ -2,7 +2,7 @@ import { ApolloClient, InMemoryCache, from, split } from "@apollo/client";
 
 import { getServerTokens } from "@/action/auth";
 import { getTokens } from "@/utils/auth";
-import { BackendConfig } from "@/utils/configs";
+import { BackendConfig, getConfigs } from "@/utils/configs";
 import { loadDevMessages, loadErrorMessages } from "@apollo/client/dev";
 import { BatchHttpLink } from "@apollo/client/link/batch-http";
 import { setContext } from "@apollo/client/link/context";
@@ -110,4 +110,12 @@ export function createApolloClient({
       },
     },
   });
+}
+
+let apolloClient: ApolloClient<Record<string, unknown>>;
+
+export function getApolloClient() {
+  if (apolloClient) return apolloClient;
+  apolloClient = createApolloClient({ ssr: true, config: getConfigs() });
+  return apolloClient;
 }

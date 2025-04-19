@@ -2,30 +2,26 @@
 
 import { useToast } from "@/context/ToastContext";
 import { useUser } from "@/context/UserContext";
+import SignInMutation from "@/graphql/mutation/auth/sign-in.gql";
+import GetMeQuery from "@/graphql/query/user/me.gql";
+import { loginSchema } from "@/schemas/user";
 import { useMutation, useQuery } from "@apollo/client";
 import { zodResolver } from "@hookform/resolvers/zod";
 import Link from "next/link";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useState } from "react";
 import { useForm } from "react-hook-form";
 import { z } from "zod";
-
-// Import GraphQL documents from the proper location
-import { GetMeGql, SIGN_IN } from "@/libs/apollo/queries";
-
-// Define schema for login form
-const loginSchema = z.object({
-  identifier: z.string().min(1, "Email or username is required"),
-  password: z.string().min(1, "Password is required"),
-});
 
 type LoginFormData = z.infer<typeof loginSchema>;
 
 export default function LoginPage() {
   const [isLoading, setIsLoading] = useState(false);
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const returnUrl = searchParams.get("returnUrl") || "/";
   const { setUser } = useUser();
-  const { showSuccessToast, showErrorToast } = useToast();
+  const { success: showSuccessToast, error: showErrorToast } = useToast();
 
   const {
     register,
@@ -35,8 +31,8 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const [signIn] = useMutation(SIGN_IN);
-  const { refetch } = useQuery(GetMeGql);
+  const [signIn] = useMutation(SignInMutation);
+  const { refetch } = useQuery(GetMeQuery);
 
   const onSubmit = async (data: LoginFormData) => {
     try {
@@ -51,16 +47,15 @@ export default function LoginPage() {
       const result = response.data.signIn;
 
       if (result.success) {
-        // Store tokens in cookies
         document.cookie = `x-token=${result.token}; path=/`;
         document.cookie = `x-refresh-token=${result.refreshToken}; path=/`;
 
-        // Fetch current user data
         const userResponse = await refetch();
 
         setUser(userResponse.data.me);
         showSuccessToast("Login successful!");
-        router.push("/");
+
+        router.push(returnUrl);
       } else {
         showErrorToast(result.message || "Login failed");
       }
@@ -78,6 +73,11 @@ export default function LoginPage() {
         <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
           Sign in to your account
         </h2>
+        {returnUrl !== "/" && (
+          <p className="mt-2 text-center text-sm text-gray-600">
+            You need to sign in to access this page
+          </p>
+        )}
       </div>
 
       <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
@@ -124,6 +124,14 @@ export default function LoginPage() {
                     {errors.password.message}
                   </p>
                 )}
+              </div>
+              <div className="flex justify-end mt-1">
+                <Link
+                  href="/forgot-password"
+                  className="text-sm font-medium text-blue-600 hover:text-blue-500"
+                >
+                  Forgot your password?
+                </Link>
               </div>
             </div>
 

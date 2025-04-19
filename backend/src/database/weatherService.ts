@@ -90,9 +90,21 @@ export async function fetchAndStoreHistoricalWeather(date: Date): Promise<Weathe
 
 /**
  * Retrieve weather data for a specific time range using MongoDB find
+ * with pagination and sorting support
  */
-export async function getWeatherDataInRange(startTime: Date, endTime: Date) {
+export async function getWeatherDataInRange(
+  startTime: Date,
+  endTime: Date,
+  limit: number = 100,
+  offset: number = 0,
+  sortField: string = "ts",
+  sortOrder: string = "desc"
+) {
   const mongoDb = await getMongoDb();
+
+  // Create sort object
+  const sort: any = {};
+  sort[sortField] = sortOrder.toLowerCase() === "asc" ? 1 : -1;
 
   const results = await mongoDb
     .collection("weather_data")
@@ -102,7 +114,9 @@ export async function getWeatherDataInRange(startTime: Date, endTime: Date) {
         $lte: endTime,
       },
     })
-    .sort({ ts: 1 })
+    .sort(sort)
+    .skip(offset)
+    .limit(limit)
     .toArray();
 
   // Transform to match our GraphQL schema
@@ -122,6 +136,20 @@ export async function getWeatherDataInRange(startTime: Date, endTime: Date) {
     period: item.metadata.period,
     createdAt: item.createdAt,
   }));
+}
+
+/**
+ * Count weather data entries for a specific time range
+ */
+export async function countWeatherData(startTime: Date, endTime: Date) {
+  const mongoDb = await getMongoDb();
+
+  return await mongoDb.collection("weather_data").countDocuments({
+    ts: {
+      $gte: startTime,
+      $lte: endTime,
+    },
+  });
 }
 
 /**

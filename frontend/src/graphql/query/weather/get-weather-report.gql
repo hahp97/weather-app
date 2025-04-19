@@ -1,0 +1,10 @@
+query GetWeatherReport($date: String) {
+  weatherReport(date: $date) {
+    id
+    timestamp
+    temperature
+    pressure
+    humidity
+    cloudCover
+  }
+}

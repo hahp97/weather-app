@@ -1,7 +1,12 @@
-#import '../../fragment/UserFragment.gql'
-
 query GetMe {
   me {
-    ...UserFragment
+    id
+    email
+    username
+    name
+    isEmailVerified
+    lastSignedInAt
+    mobile
+    active
   }
 }

@@ -1,6 +1,5 @@
 "use client";
 
-import { GetMeGql } from "@/libs/apollo/queries";
 import { ApolloError, useQuery } from "@apollo/client";
 import {
   createContext,
@@ -9,6 +8,9 @@ import {
   useEffect,
   useState,
 } from "react";
+
+// Import GraphQL query from .gql file
+import GetMeQuery from "@/graphql/query/user/me.gql";
 
 interface PhoneNumber {
   code: string;
@@ -40,7 +42,7 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
 
-  const { loading, error, data } = useQuery(GetMeGql, {
+  const { loading, error, data } = useQuery(GetMeQuery, {
     fetchPolicy: "network-only",
   });
 

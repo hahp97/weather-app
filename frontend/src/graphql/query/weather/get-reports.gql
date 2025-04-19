@@ -1,7 +1,14 @@
 #import '../../fragment/WeatherReportFragment.gql'
 
-query GetWeatherReports {
-  weatherReports {
+query GetWeatherReports(
+  $first: Int
+  $skip: Int
+  $orderBy: [WeatherReportOrder]
+) {
+  weatherReports(first: $first, skip: $skip, orderBy: $orderBy) {
     ...WeatherReportFragment
+  }
+  weatherReportsMeta {
+    count
   }
 }

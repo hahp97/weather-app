@@ -1,0 +1,12 @@
+query CurrentWeather {
+  currentWeather {
+    id
+    timestamp
+    temperature
+    pressure
+    humidity
+    cloudCover
+    windSpeed
+    weatherCondition
+  }
+}
