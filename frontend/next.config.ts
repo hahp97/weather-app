@@ -1,6 +1,11 @@
 /** @type {import('next').NextConfig} */
 
-const nextConfig = {
+import type { NextConfig } from "next";
+import type { Configuration } from "webpack";
+
+//
+
+const nextConfig: NextConfig = {
   output: "standalone",
   images: {
     remotePatterns: [
@@ -16,16 +21,19 @@ const nextConfig = {
     },
   },
   poweredByHeader: false,
-  webpack(config) {
+  webpack(config: Configuration): Configuration {
+    if (!config.module) config.module = { rules: [] };
+    if (!config.module.rules) config.module.rules = [];
+
     config.module.rules.push({
       test: /\.(graphql|gql)/,
       exclude: /node_modules/,
       loader: "graphql-tag/loader",
     });
-    config.plugins = [new CaseSensitivePathsPlugin(), ...config.plugins];
 
     return config;
   },
+
   reactStrictMode: false,
 };
 
