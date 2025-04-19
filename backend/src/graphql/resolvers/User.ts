@@ -1,20 +1,20 @@
+import { compareObject } from "@/helpers/model";
 import jobs from "@/jobs";
-import { getUserByCredential, recreateCredential, requestResetPassword, tryLogin } from "@/lib/auth";
+import { getUserByCredential, recreateCredential, requestResetPassword, tryLogin } from "@/libs/auth";
 import type { AppContext } from "@/types";
 import buildPrismaFilter from "@/utils/buildPrismaFilter";
 import { getConfigs } from "@/utils/configs";
-import { compareObject } from "@/utils/model";
 import { comparePassword, hashPassword } from "@/utils/password";
 import pubsub from "@/utils/pubsub";
 import { normalizeQueryArgs } from "@/utils/query";
 import { normalizeErrors } from "@/utils/zod";
-import { updateProfileSchema } from "@/validators/updateProfile";
 import {
   createUserSchema,
   forgotPasswordSchema,
   renewPasswordSchema,
   resendNewUserSchema,
   resetPasswordSchema,
+  updateProfileSchema,
   updateUserSchema,
 } from "@/validators/user";
 import { withFilter } from "graphql-subscriptions";
@@ -183,7 +183,7 @@ export default {
           };
         }
 
-        const createdUser = await prisma.User.create({
+        const createdUser = await prisma.user.create({
           data: {
             ..._.omit(data, ["callbackUrl"]),
             password: "",

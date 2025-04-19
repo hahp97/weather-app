@@ -10,6 +10,8 @@ model User {
     active         Boolean   @default(true)
     lastSignedInAt DateTime?
 
+    superAdmin Boolean @default(false)
+
     createdAt DateTime  @default(now())
     updatedAt DateTime? @updatedAt
     deletedAt DateTime?

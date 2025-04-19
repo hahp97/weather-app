@@ -3,17 +3,17 @@ import { expressMiddleware } from "@apollo/server/express4";
 import { ApolloServerPluginDrainHttpServer } from "@apollo/server/plugin/drainHttpServer";
 import { useServer } from "graphql-ws/lib/use/ws";
 import http from "http";
+import jwt, { JwtPayload } from "jsonwebtoken";
 import { WebSocketServer } from "ws";
 
 import { prisma } from "@/database/prisma";
 import { buildDataloaders } from "@/dataloaders";
 import { refreshTokens } from "@/libs/auth";
-import type { AppContext, PrismaInstance } from "@/types/index";
+import type { AppContext, PrismaInstance, RequestType } from "@/types/index";
 import { getConfigs } from "@/utils/configs";
 import { setCookies } from "@/utils/cookie";
 import express from "express";
 import { GraphQLError } from "graphql";
-import { JwtPayload } from "jsonwebtoken";
 import { schema } from "./schema";
 
 const { secret1, secret2 } = getConfigs();

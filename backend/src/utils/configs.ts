@@ -6,12 +6,24 @@ const defaultConfigs = {
   port: 4000,
   emailSender: null,
   emailName: null,
+  emailHost: "smtp.gmail.com",
+  emailPort: "587",
+  emailUser: null,
+  emailPass: null,
+  emailFrom: "noreply@weatherreport.com",
   secret1: null,
   secret2: null,
+  appNamespace: "weather_report_backend",
+  redisHost: "localhost",
+  redisPort: 6379,
+  redisUsername: null,
+  redisPassword: null,
+  redisUrl: "redis://127.0.0.1:6379/0",
 };
 
 export function getConfigs() {
   const {
+    APP_NAMESPACE = defaultConfigs.appNamespace,
     NODE_ENV = defaultConfigs.nodeEnv,
     APP_NAME = defaultConfigs.appName,
     APP_ENV = defaultConfigs.appEnv,
@@ -24,11 +36,22 @@ export function getConfigs() {
     AWS_SECRET_ACCESS_KEY,
     EMAIL_SENDER = defaultConfigs.emailSender,
     EMAIL_NAME = defaultConfigs.emailName,
+    EMAIL_HOST = defaultConfigs.emailHost,
+    EMAIL_PORT = defaultConfigs.emailPort,
+    EMAIL_USER = defaultConfigs.emailUser,
+    EMAIL_PASS = defaultConfigs.emailPass,
+    EMAIL_FROM = defaultConfigs.emailFrom,
     SECRET1,
     SECRET2,
+    REDIS_HOST = defaultConfigs.redisHost,
+    REDIS_PORT = defaultConfigs.redisPort,
+    REDIS_USERNAME = defaultConfigs.redisUsername,
+    REDIS_PASSWORD = defaultConfigs.redisPassword,
+    REDIS_URL = defaultConfigs.redisUrl,
   } = process.env || {};
 
   const configs = {
+    appNamespace: APP_NAMESPACE,
     nodeEnv: NODE_ENV,
     appName: APP_NAME,
     appEnv: APP_ENV,
@@ -41,8 +64,18 @@ export function getConfigs() {
     awsSecretAccessKey: AWS_SECRET_ACCESS_KEY,
     emailSender: EMAIL_SENDER,
     emailName: EMAIL_NAME,
+    emailHost: EMAIL_HOST,
+    emailPort: EMAIL_PORT,
+    emailUser: EMAIL_USER,
+    emailPass: EMAIL_PASS,
+    emailFrom: EMAIL_FROM,
     secret1: SECRET1,
     secret2: SECRET2,
+    redisHost: REDIS_HOST,
+    redisPort: REDIS_PORT,
+    redisUsername: REDIS_USERNAME,
+    redisPassword: REDIS_PASSWORD,
+    redisUrl: REDIS_URL,
   };
   return configs;
 }

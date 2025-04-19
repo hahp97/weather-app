@@ -52,3 +52,24 @@ export const forgotPasswordSchema = z.object({
   email: z.string().email(),
   callbackUrl: z.string().url(),
 });
+
+export const updateProfileSchema = z.object({
+  name: z.string().optional(),
+  mobile: z
+    .object({
+      code: z.string().default("65"),
+      country: z.string().default("SG"),
+      number: z.string().min(8, "Mobile number must be at least 8 digits long"),
+    })
+    .optional(),
+  currentPassword: z
+    .string()
+    .min(6, "Password must be at least 6 characters long")
+    .refine((val) => !/\s/.test(val), "Password cannot contain spaces")
+    .optional(),
+  newPassword: z
+    .string()
+    .min(6, "Password must be at least 6 characters long")
+    .refine((val) => !/\s/.test(val), "Password cannot contain spaces")
+    .optional(),
+});

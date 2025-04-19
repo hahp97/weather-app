@@ -1,72 +1,67 @@
-import * as OTPAuth from "otpauth";
+import crypto from "crypto";
 import { getConfigs } from "./configs";
 
-export const generateOTP = (phoneNumber: string, issuer: string, period: number = 60) => {
-  const secret = new OTPAuth.Secret({ size: 20 });
+/**
+ * Generates a one-time password (OTP) for the given email and type
+ * @param identifier - The email or other identifier
+ * @param type - The type of OTP (e.g., 'user', 'merchant')
+ * @returns An object containing the OTP token and secret
+ */
+export const generateOTP = (identifier: string, type: string): { token: string; secret: string } => {
+  // Generate a 6-digit OTP
+  const token = Math.floor(100000 + Math.random() * 900000).toString();
 
-  const totp = new OTPAuth.TOTP({
-    // Provider or service the account is associated with.
-    issuer: issuer || "phonenumber",
-    // Account identifier.
-    label: phoneNumber,
-    // Algorithm used for the HMAC function, possible values are:
-    //   "SHA1", "SHA224", "SHA256", "SHA384", "SHA512",
-    //   "SHA3-224", "SHA3-256", "SHA3-384" and "SHA3-512".
-    algorithm: "SHA1",
-    // Length of the generated tokens.
-    digits: 6,
-    // Interval of time for which a token is valid, in seconds.
-    period: period, // default by 60 seconds
-    // Arbitrary key encoded in base32 or `OTPAuth.Secret` instance
-    // (if omitted, a cryptographically secure random secret is generated).
-    secret: secret,
-    //   or: `OTPAuth.Secret.fromBase32("US3WHSG7X5KAPV27VANWKQHF3SH3HULL")`
-    //   or: `new OTPAuth.Secret()`
-  });
-  const token = totp.generate();
+  // Create a hash using the token, identifier, and type
+  const hash = crypto.createHmac("sha256", token).update(`${identifier}:${type}`).digest("hex");
+
   return {
     token,
-    secret: secret.hex,
+    secret: hash,
   };
 };
 
+/**
+ * Verifies if the provided OTP is valid
+ * @param token - The OTP token to verify
+ * @param secret - The previously generated secret
+ * @param identifier - The email or other identifier
+ * @param type - The type of OTP
+ * @returns A boolean indicating whether the OTP is valid
+ */
+export const verifyOTP = (token: string, secret: string, identifier: string, type: string): boolean => {
+  const hash = crypto.createHmac("sha256", token).update(`${identifier}:${type}`).digest("hex");
+
+  return hash === secret;
+};
+
+/**
+ * Validates an OTP with support for development mode
+ * @param options - Validation options
+ * @returns A boolean indicating if the OTP is valid
+ */
 export const validateOtp = ({
   token,
   secret,
-  label,
-  issuer,
-  period = 60,
+  identifier,
+  type = "user",
 }: {
   token: string;
   secret: string;
-  label?: string;
-  issuer?: string;
-  period?: number;
+  identifier: string;
+  type?: string;
 }): boolean => {
   try {
-    const secretKey = OTPAuth.Secret.fromHex(secret);
-
-    const totp = new OTPAuth.TOTP({
-      issuer: issuer || "phonenumber",
-      label: label || "user",
-      algorithm: "SHA1",
-      digits: 6,
-      period: period,
-      secret: secretKey,
-    });
-
     const { appEnv } = getConfigs();
 
     // For development and staging environments, accept "123456" as valid token
-    if (appEnv === "development") {
+    if (appEnv === "development" || appEnv === "staging") {
       if (token === "123456") {
         return true;
       }
     }
 
     // For all environments, validate OTP normally
-    const result = totp.validate({ token });
-    return result !== null;
+    return verifyOTP(token, secret, identifier, type);
   } catch (error) {
     return false;
   }

@@ -1,6 +1,6 @@
+import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/constants";
 import type { AppContext } from "@/types";
 import buildPrismaOrder from "@/utils/buildPrismaOrder";
-import { DEFAULT_PAGE_SIZE, MAX_PAGE_SIZE } from "@/utils/constants";
 
 export type NormalizedQueryArgs = {
   first: number;

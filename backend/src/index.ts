@@ -1,7 +1,6 @@
 process.env.TZ = "UTC";
 
 import { createApolloServerMiddleware } from "@/graphql";
-import "@/jobs/runner";
 import { getConfigs } from "@/utils/configs";
 import { addTokens, addUser, limiter } from "@/utils/middleware";
 import bodyParser from "body-parser";

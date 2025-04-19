@@ -8,8 +8,7 @@ export type TUser = {
   password: string;
   name: string;
   superAdmin: boolean;
-  merchantId: string | null;
-  merchantIds: string[] | null;
+
   createdAt: Date;
   updatedAt: Date | null;
   deletedAt: Date | null;
@@ -17,8 +16,8 @@ export type TUser = {
 
 export type TCreateToken = (params: {
   user: TUser;
-  tokenSecret1: string | null;
-  tokenSecret2: string | null;
+  tokenSecret1: string;
+  tokenSecret2: string;
   expiresInToken?: string;
   expiresInRefreshToken?: string;
 }) => Promise<[string, string]>;

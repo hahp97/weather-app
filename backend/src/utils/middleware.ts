@@ -1,5 +1,5 @@
 import { prisma } from "@/database/prisma";
-import { refreshCustomerTokens, refreshTokens } from "@/lib/auth";
+import { refreshTokens } from "@/libs/auth";
 import { RequestType } from "@/types";
 import { getConfigs } from "@/utils/configs";
 import { getCookies } from "@/utils/cookie";
@@ -47,32 +47,6 @@ export const addUser: MiddlewareFunction = async (req, res, next) => {
       res.set("x-refresh-token", newTokens.refreshToken);
     }
     req.user = newTokens.user;
-  }
-
-  next();
-};
-
-export const addCustomer: MiddlewareFunction = async (req, res, next) => {
-  const { secret1 } = getConfigs();
-  const token = req.token;
-  const refreshToken = req.refreshToken;
-  if (!token) {
-    return next();
-  }
-
-  try {
-    const jwtData = jwt.verify(token, secret1 as string) as any;
-    req.customer = jwtData.customer;
-  } catch (err) {
-    if (!refreshToken) return next();
-
-    const newTokens = await refreshCustomerTokens(refreshToken as string, { prisma: prisma });
-    if (newTokens.token && newTokens.refreshToken) {
-      res.set("Access-Control-Expose-Headers", "x-token, x-refresh-token");
-      res.set("x-token", newTokens.token);
-      res.set("x-refresh-token", newTokens.refreshToken);
-    }
-    req.customer = newTokens.customer;
   }
 
   next();
