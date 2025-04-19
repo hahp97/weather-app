@@ -1,148 +1,329 @@
 "use client";
 
-import { DatePickerForm } from "@/components/forms/DatePickerForm";
+import { Button } from "@/components/ui/button";
+import { Calendar } from "@/components/ui/calendar";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { LoadingSpinner } from "@/components/ui/LoadingSpinner";
-import { WeatherCard } from "@/components/ui/WeatherCard";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from "@/components/ui/popover";
 import { useToast } from "@/context/ToastContext";
-import type { WeatherReport } from "@/context/WeatherContext";
 import { useWeather } from "@/context/WeatherContext";
-import type { WeatherRequestFormData } from "@/schemas/weather";
-import { gql, useMutation } from "@apollo/client";
+import { cn, formatDate } from "@/lib/utils";
+import { gql, useMutation, useQuery } from "@apollo/client";
+import { CalendarIcon } from "lucide-react";
 import { useState } from "react";
 
-// GraphQL queries and mutations
-const GET_WEATHER_REPORT = gql`
-  query GetWeatherReport($date: String) {
-    weatherReport(date: $date) {
+// GraphQL queries
+const CURRENT_WEATHER_QUERY = gql`
+  query CurrentWeather {
+    currentWeather {
       id
       timestamp
       temperature
       pressure
       humidity
       cloudCover
+      windSpeed
+      weatherCondition
     }
   }
 `;
 
-const SAVE_WEATHER_REPORT = gql`
-  mutation SaveWeatherReport($input: WeatherReportInput!) {
-    saveWeatherReport(input: $input) {
+// GraphQL mutations
+const FETCH_HISTORICAL_WEATHER_MUTATION = gql`
+  mutation FetchHistoricalWeather($date: DateTime!) {
+    fetchHistoricalWeatherData(date: $date) {
       success
       message
-      report {
-        id
-        timestamp
-        temperature
-        pressure
-        humidity
-        cloudCover
+      errors {
+        message
       }
+      extra
     }
   }
 `;
 
+const GENERATE_WEATHER_REPORT_MUTATION = gql`
+  mutation GenerateWeatherReport($input: GenerateWeatherReportInput!) {
+    generateWeatherReport(input: $input) {
+      success
+      message
+      errors {
+        message
+      }
+      extra
+    }
+  }
+`;
+
+interface WeatherData {
+  id: string;
+  timestamp: string;
+  temperature: number;
+  pressure: number;
+  humidity: number;
+  cloudCover: number;
+  windSpeed?: number;
+  weatherCondition?: string;
+}
+
 export default function GeneratePage() {
-  const [currentReport, setCurrentReport] = useState<WeatherReport | null>(
-    null
-  );
+  const [date, setDate] = useState<Date | undefined>(undefined);
+  const [weatherData, setWeatherData] = useState<WeatherData | null>(null);
+  const [isLoading, setIsLoading] = useState(false);
+
   const { addReport } = useWeather();
-  const { showSuccessToast, showErrorToast, showInfoToast } = useToast();
+  const toast = useToast();
 
-  const [getWeatherReport, { loading: loadingGet }] = useMutation(
-    GET_WEATHER_REPORT,
-    {
-      onCompleted: (data) => {
-        if (data?.weatherReport) {
-          setCurrentReport(data.weatherReport);
-          showInfoToast("Weather report generated");
-        }
-      },
-      onError: (error) => {
-        console.error("Error fetching weather report:", error);
-        showErrorToast("Failed to fetch weather report. Please try again.");
-      },
-    }
+  // Current Weather Query
+  const { refetch: refetchCurrentWeather } = useQuery(CURRENT_WEATHER_QUERY, {
+    fetchPolicy: "network-only",
+    skip: true, // Don't run the query on component mount
+  });
+
+  // Historical Weather Mutation
+  const [fetchHistoricalWeather] = useMutation(
+    FETCH_HISTORICAL_WEATHER_MUTATION
   );
 
-  const [saveWeatherReport, { loading: loadingSave }] = useMutation(
-    SAVE_WEATHER_REPORT,
-    {
-      onCompleted: (data) => {
-        if (
-          data?.saveWeatherReport?.success &&
-          data?.saveWeatherReport?.report
-        ) {
-          addReport(data.saveWeatherReport.report);
-          showSuccessToast("Weather report saved successfully!");
-        }
-      },
-      onError: (error) => {
-        console.error("Error saving weather report:", error);
-        showErrorToast("Failed to save weather report. Please try again.");
-      },
-    }
-  );
+  // Generate Report Mutation
+  const [generateWeatherReport] = useMutation(GENERATE_WEATHER_REPORT_MUTATION);
 
-  const handleGenerateReport = async (data: WeatherRequestFormData) => {
-    await getWeatherReport({
-      variables: {
-        date: data.date?.toISOString(),
-      },
-    });
+  const handleGenerateReport = async () => {
+    setIsLoading(true);
+    setWeatherData(null);
+
+    try {
+      if (!date) {
+        // Get current weather
+        const { data } = await refetchCurrentWeather();
+        if (data?.currentWeather) {
+          setWeatherData(data.currentWeather);
+          toast.success("Current weather data loaded");
+        }
+      } else {
+        // Get historical weather
+        const { data } = await fetchHistoricalWeather({
+          variables: { date: date.toISOString() },
+        });
+
+        if (data?.fetchHistoricalWeatherData?.success) {
+          const historicalData = data.fetchHistoricalWeatherData.extra?.weather;
+          if (historicalData) {
+            setWeatherData(historicalData);
+            toast.success("Historical weather data loaded");
+          } else {
+            toast.error("No historical weather data available");
+          }
+        } else {
+          const errorMessage =
+            data?.fetchHistoricalWeatherData?.errors?.[0]?.message ||
+            data?.fetchHistoricalWeatherData?.message ||
+            "Failed to load historical weather data";
+
+          if (errorMessage.includes("subscription")) {
+            toast.error(
+              "Historical data requires a paid OpenWeather API subscription"
+            );
+          } else {
+            toast.error(errorMessage);
+          }
+        }
+      }
+    } catch (error) {
+      console.error("Error fetching weather data:", error);
+      toast.error("Failed to fetch weather data");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
   const handleSaveReport = async () => {
-    if (!currentReport) return;
+    if (!weatherData) return;
 
-    await saveWeatherReport({
-      variables: {
-        input: {
-          timestamp: currentReport.timestamp,
-          temperature: currentReport.temperature,
-          pressure: currentReport.pressure,
-          humidity: currentReport.humidity,
-          cloudCover: currentReport.cloudCover,
+    setIsLoading(true);
+    try {
+      // Create a date range for the report (current day)
+      const reportDate = date || new Date();
+      const startOfDay = new Date(reportDate);
+      startOfDay.setHours(0, 0, 0, 0);
+      const endOfDay = new Date(reportDate);
+      endOfDay.setHours(23, 59, 59, 999);
+
+      const { data } = await generateWeatherReport({
+        variables: {
+          input: {
+            startTime: startOfDay.toISOString(),
+            endTime: endOfDay.toISOString(),
+            title: `Weather Report for ${formatDate(reportDate)}`,
+          },
         },
-      },
-    });
+      });
+
+      if (data?.generateWeatherReport?.success) {
+        const reportData = data.generateWeatherReport.extra?.report;
+        if (reportData) {
+          addReport(reportData);
+          toast.success("Weather report saved successfully");
+        } else {
+          toast.error("Report generated but no data was returned");
+        }
+      } else {
+        const errorMessage =
+          data?.generateWeatherReport?.errors?.[0]?.message ||
+          data?.generateWeatherReport?.message ||
+          "Failed to generate weather report";
+        toast.error(errorMessage);
+      }
+    } catch (error) {
+      console.error("Error generating weather report:", error);
+      toast.error("Failed to generate weather report");
+    } finally {
+      setIsLoading(false);
+    }
   };
 
-  const isLoading = loadingGet || loadingSave;
-
   return (
-    <div className="py-6">
-      <h2 className="text-2xl font-semibold text-gray-900 mb-6">
-        Generate Weather Report
-      </h2>
+    <div className="container py-8 max-w-4xl mx-auto">
+      <h1 className="text-3xl font-bold mb-8 text-center">
+        Weather Report Generator
+      </h1>
 
-      <div className="bg-white shadow overflow-hidden sm:rounded-lg p-6 mb-6">
-        <h3 className="text-lg font-medium text-gray-900 mb-4">Select Date</h3>
-        <div className="max-w-md">
-          <DatePickerForm
-            onSubmit={handleGenerateReport}
-            isLoading={isLoading}
-          />
-        </div>
-      </div>
-
-      {isLoading && <LoadingSpinner />}
-
-      {!isLoading && currentReport && (
-        <div className="mt-6">
-          <div className="flex justify-between items-center mb-4">
-            <h3 className="text-lg font-medium text-gray-900">
-              Current Weather Report
-            </h3>
-            <button
-              onClick={handleSaveReport}
-              className="inline-flex items-center px-4 py-2 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-500"
+      <Card className="mb-8">
+        <CardHeader>
+          <CardTitle>Select Date</CardTitle>
+        </CardHeader>
+        <CardContent>
+          <div className="flex flex-col md:flex-row gap-4 items-start md:items-end">
+            <div className="space-y-2 flex-1">
+              <label className="text-sm font-medium">
+                Date (leave empty for current time)
+              </label>
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className={cn(
+                      "w-full justify-start text-left font-normal",
+                      !date && "text-muted-foreground"
+                    )}
+                  >
+                    <CalendarIcon className="mr-2 h-4 w-4" />
+                    {date ? formatDate(date) : "Select date"}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0">
+                  <Calendar
+                    mode="single"
+                    selected={date}
+                    onSelect={setDate}
+                    initialFocus
+                  />
+                </PopoverContent>
+              </Popover>
+              {date && (
+                <Button
+                  variant="ghost"
+                  size="sm"
+                  onClick={() => setDate(undefined)}
+                  className="text-xs text-blue-600"
+                >
+                  Clear (Use current time)
+                </Button>
+              )}
+            </div>
+            <Button
+              onClick={handleGenerateReport}
+              disabled={isLoading}
+              className="px-8"
             >
-              Save Report
-            </button>
+              Generate
+            </Button>
           </div>
-          <WeatherCard report={currentReport} />
+        </CardContent>
+      </Card>
+
+      {isLoading && (
+        <div className="flex justify-center my-12">
+          <LoadingSpinner />
         </div>
       )}
+
+      {weatherData && !isLoading && (
+        <div className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle className="flex justify-between items-center">
+                <span>Weather Report</span>
+                <span className="text-sm font-normal text-muted-foreground">
+                  {formatDate(new Date(weatherData.timestamp))}
+                </span>
+              </CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+                <WeatherMetricCard
+                  title="Temperature"
+                  value={`${weatherData.temperature.toFixed(1)}°C`}
+                  icon="🌡️"
+                />
+                <WeatherMetricCard
+                  title="Pressure"
+                  value={`${weatherData.pressure.toFixed(0)} hPa`}
+                  icon="📊"
+                />
+                <WeatherMetricCard
+                  title="Humidity"
+                  value={`${weatherData.humidity.toFixed(0)}%`}
+                  icon="💧"
+                />
+                <WeatherMetricCard
+                  title="Cloud Cover"
+                  value={`${weatherData.cloudCover.toFixed(0)}%`}
+                  icon="☁️"
+                />
+              </div>
+
+              {weatherData.weatherCondition && (
+                <div className="mt-6 text-center">
+                  <p className="text-lg font-medium">
+                    {weatherData.weatherCondition}
+                  </p>
+                </div>
+              )}
+
+              <div className="mt-8 flex justify-center">
+                <Button onClick={handleSaveReport} disabled={isLoading}>
+                  Save Report
+                </Button>
+              </div>
+            </CardContent>
+          </Card>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function WeatherMetricCard({
+  title,
+  value,
+  icon,
+}: {
+  title: string;
+  value: string;
+  icon: string;
+}) {
+  return (
+    <div className="bg-slate-50 rounded-lg p-4 flex items-center">
+      <div className="mr-4 text-2xl">{icon}</div>
+      <div>
+        <h3 className="text-sm font-medium text-slate-500">{title}</h3>
+        <p className="text-2xl font-semibold">{value}</p>
+      </div>
     </div>
   );
 }

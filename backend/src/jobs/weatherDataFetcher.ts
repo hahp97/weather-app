@@ -56,8 +56,13 @@ export class WeatherDataFetcher {
    * Fetch weather data and store it in database
    */
   private async fetchAndStore(): Promise<void> {
-    const data = await openWeatherClient.getCurrentWeather();
-    await storeWeatherData(data);
-    console.log(`Weather data stored for ${data.timestamp.toISOString()}`);
+    try {
+      const data = await openWeatherClient.getCurrentWeather();
+      await storeWeatherData(data);
+      console.log(`Weather data stored for ${data.timestamp.toISOString()}`);
+    } catch (error) {
+      console.error("Error in fetchAndStore:", error);
+      throw error;
+    }
   }
 }

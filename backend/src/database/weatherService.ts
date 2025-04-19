@@ -1,9 +1,25 @@
 import { openWeatherClient, WeatherData } from "@/api/openweather";
+import { getConfigs } from "@/utils/configs";
 import { PrismaClient } from "@prisma/client";
-import { ObjectId } from "mongodb";
+import { MongoClient, ObjectId } from "mongodb";
 
 const prisma = new PrismaClient();
-const { db } = prisma as any; // Access the MongoDB client directly
+// Fix the MongoDB connection access
+let db: any = null;
+
+// Initialize MongoDB connection
+async function getMongoDb() {
+  if (!db) {
+    const dbUrl = getConfigs().databaseUrl || "";
+    if (!dbUrl) {
+      throw new Error("DATABASE_URL environment variable is not set");
+    }
+    const client = new MongoClient(dbUrl);
+    await client.connect();
+    db = client.db();
+  }
+  return db;
+}
 
 interface WeatherReportFilter {
   AND?: WeatherReportFilter[];
@@ -25,8 +41,11 @@ type TimeInterval = "minute" | "hour" | "day" | "week" | "month";
  * Using direct MongoDB driver since Prisma doesn't fully support time series collections
  */
 export async function storeWeatherData(data: WeatherData): Promise<void> {
+  // Get MongoDB instance
+  const mongoDb = await getMongoDb();
+
   // Insert the data directly using MongoDB driver
-  await db.collection("weather_data").insertOne({
+  await mongoDb.collection("weather_data").insertOne({
     ts: data.timestamp,
     temperature: data.temperature,
     pressure: data.pressure,
@@ -73,7 +92,9 @@ export async function fetchAndStoreHistoricalWeather(date: Date): Promise<Weathe
  * Retrieve weather data for a specific time range using MongoDB find
  */
 export async function getWeatherDataInRange(startTime: Date, endTime: Date) {
-  const results = await db
+  const mongoDb = await getMongoDb();
+
+  const results = await mongoDb
     .collection("weather_data")
     .find({
       ts: {
@@ -158,7 +179,9 @@ export async function getAggregatedWeatherData(startTime: Date, endTime: Date, i
   }
 
   // Run the aggregation pipeline
-  const results = await db
+  const mongoDb = await getMongoDb();
+
+  const results = await mongoDb
     .collection("weather_data")
     .aggregate([
       // Match documents in the time range
@@ -214,7 +237,9 @@ export async function getAggregatedWeatherData(startTime: Date, endTime: Date, i
  */
 export async function generateWeatherReport(startTime: Date, endTime: Date, userId?: string, title?: string) {
   // Use aggregation pipeline for efficient calculation
-  const aggregationResults = await db
+  const mongoDb = await getMongoDb();
+
+  const aggregationResults = await mongoDb
     .collection("weather_data")
     .aggregate([
       {
@@ -259,7 +284,7 @@ export async function generateWeatherReport(startTime: Date, endTime: Date, user
     updatedAt: new Date(),
   };
 
-  const result = await db.collection("weather_reports").insertOne(reportData);
+  const result = await mongoDb.collection("weather_reports").insertOne(reportData);
 
   // Return the created report with id
   return {
@@ -276,7 +301,8 @@ export async function getWeatherStatistics(days: number = 7) {
   const startDate = new Date();
   startDate.setDate(startDate.getDate() - days);
 
-  const result = await db
+  const mongoDb = await getMongoDb();
+  const result = await mongoDb
     .collection("weather_data")
     .aggregate([
       {
@@ -430,7 +456,8 @@ export async function getAllWeatherReports(
   const sort = buildSortObject(orderBy);
 
   // Use MongoDB for fetching reports
-  const results = await db
+  const mongoDb = await getMongoDb();
+  const results = await mongoDb
     .collection("weather_reports")
     .find(where)
     .sort(sort)
@@ -448,14 +475,16 @@ export async function getAllWeatherReports(
 export async function countWeatherReports(filter?: WeatherReportFilter) {
   const filterQuery = buildFilterQuery(filter);
 
-  return db.collection("weather_reports").countDocuments(filterQuery);
+  const mongoDb = await getMongoDb();
+  return mongoDb.collection("weather_reports").countDocuments(filterQuery);
 }
 
 /**
  * Get a specific weather report by ID
  */
 export async function getWeatherReportById(reportId: string) {
-  const result = await db.collection("weather_reports").findOne({
+  const mongoDb = await getMongoDb();
+  const result = await mongoDb.collection("weather_reports").findOne({
     _id: new ObjectId(reportId),
   });
 
