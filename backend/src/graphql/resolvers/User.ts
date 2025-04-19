@@ -512,11 +512,12 @@ export default {
         await jobs.perform(
           { id: "email-job" },
           {
-            email: "reset-password-email",
+            email: "otp-verification-email",
             subject: "Reset Your Password",
             to: email,
             user,
             otp,
+            code: otp,
             callbackUrl,
           }
         );
@@ -568,6 +569,7 @@ export default {
               to: user.email,
               user: user,
               callbackUrl,
+              otp: null,
             }
           );
         }
