@@ -1,10 +1,10 @@
 "use client";
 
+import LoadingSpinner from "@/components/LoadingSpinner";
 import { Button } from "@/components/ui/button";
 import GetLatestEmailPreviewGql from "@/graphql/query/email/get-latest-email-preview.gql";
 import { getApolloClient } from "@/libs/apollo/client";
 import { useEffect, useState } from "react";
-import { LoadingSpinner } from "./LoadingSpinner";
 
 function EmailPreviewButton({ email, className }: EmailPreviewButtonProps) {
   const [preview, setPreview] = useState<EmailPreview | null>(null);

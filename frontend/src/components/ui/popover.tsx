@@ -16,7 +16,19 @@ const PopoverContent = React.forwardRef<
       align={align}
       sideOffset={sideOffset}
       className={cn(
-        "z-50 w-72 rounded-md border bg-white p-4 shadow-md outline-none animate-in data-[side=bottom]:slide-in-from-top-2 data-[side=left]:slide-in-from-right-2 data-[side=right]:slide-in-from-left-2 data-[side=top]:slide-in-from-bottom-2",
+        "z-50 w-72 rounded-lg bg-white dark:bg-gray-950",
+        "border border-gray-100/60 dark:border-gray-800/40",
+        "shadow-[0_10px_38px_-10px_rgba(22,23,24,0.35),0_10px_20px_-15px_rgba(22,23,24,0.2)]",
+        "dark:shadow-[0_10px_38px_-10px_rgba(0,0,0,0.7),0_10px_20px_-15px_rgba(0,0,0,0.5)]",
+        "backdrop-blur-[6px] bg-white/95 dark:bg-gray-950/90",
+        "p-4 sm:p-5",
+        "animate-in data-[side=bottom]:slide-in-from-top-1 data-[side=left]:slide-in-from-right-1",
+        "data-[side=right]:slide-in-from-left-1 data-[side=top]:slide-in-from-bottom-1",
+        "data-[state=open]:animate-in data-[state=closed]:animate-out",
+        "data-[state=closed]:fade-out-0 data-[state=open]:fade-in-0",
+        "data-[state=closed]:zoom-out-95 data-[state=open]:zoom-in-95",
+        "transition-all duration-200 ease-out",
+        "ring-1 ring-gray-200/10 dark:ring-gray-800/20",
         className
       )}
       {...props}

@@ -1,8 +1,21 @@
 "use client";
 
+import LoadingSpinner from "@/components/LoadingSpinner";
+import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { useUser } from "@/context/UserContext";
 import CurrentWeatherQuery from "@/graphql/query/weather/current-weather.gql";
 import { useQuery } from "@apollo/client";
+import {
+  Cloud,
+  CloudRain,
+  CloudSnow,
+  Droplets,
+  Gauge,
+  RefreshCw,
+  Sun,
+  Thermometer,
+  Wind,
+} from "lucide-react";
 import { useEffect, useState } from "react";
 
 interface WeatherData {
@@ -75,59 +88,152 @@ export default function WeatherDisplay() {
     return `${diffInDays} day${diffInDays > 1 ? "s" : ""} ago`;
   };
 
+  // Function to get appropriate weather icon
+  const getWeatherIcon = () => {
+    if (!weatherData) return <Cloud className="h-10 w-10 text-blue-400" />;
+
+    const condition = weatherData.weatherCondition?.toLowerCase() || "";
+
+    if (condition.includes("clear") || condition.includes("sunny")) {
+      return <Sun className="h-10 w-10 text-yellow-500" />;
+    } else if (condition.includes("rain") || condition.includes("drizzle")) {
+      return <CloudRain className="h-10 w-10 text-blue-400" />;
+    } else if (condition.includes("snow")) {
+      return <CloudSnow className="h-10 w-10 text-blue-300" />;
+    } else if (condition.includes("cloud")) {
+      return <Cloud className="h-10 w-10 text-gray-400" />;
+    }
+
+    // Default icon if no specific condition matches
+    return <Cloud className="h-10 w-10 text-blue-400" />;
+  };
+
   if (loading && !weatherData)
     return (
-      <div className="animate-pulse bg-blue-50 p-6 rounded-lg shadow-md">
-        <div className="h-4 bg-blue-200 rounded w-3/4 mb-4"></div>
-        <div className="h-4 bg-blue-200 rounded w-1/2 mb-4"></div>
-        <div className="h-4 bg-blue-200 rounded w-2/3"></div>
-      </div>
+      <Card className="w-full shadow-lg border-0">
+        <CardContent className="p-6 flex justify-center items-center min-h-[300px]">
+          <LoadingSpinner size="md" />
+        </CardContent>
+      </Card>
     );
 
   if (error)
     return (
-      <div className="bg-red-50 p-6 rounded-lg shadow-md text-red-700">
-        <p>Error loading weather data</p>
-      </div>
+      <Card className="border-red-200 bg-red-50 shadow-lg">
+        <CardContent className="p-6 text-center text-red-600">
+          <p className="font-medium">Error loading weather data</p>
+          <p className="text-sm mt-2">Please refresh and try again</p>
+        </CardContent>
+      </Card>
     );
 
   if (!weatherData) return null;
 
   return (
-    <div className="bg-blue-50 p-6 rounded-lg shadow-md">
-      <h3 className="text-lg font-medium text-blue-900 mb-2">
-        Current Weather at Changi Airport
-      </h3>
+    <Card className="overflow-hidden shadow-lg border-0 rounded-xl bg-gradient-to-br from-blue-50 to-white">
+      <CardHeader className="pb-2 border-b border-blue-100">
+        <CardTitle className="flex justify-between items-center">
+          <div className="flex items-center">
+            {getWeatherIcon()}
+            <span className="ml-2 text-blue-800">
+              Current Weather at Changi Airport
+            </span>
+          </div>
+          {user && (
+            <button
+              onClick={() => refetch()}
+              className="p-1.5 rounded-full text-blue-600 hover:text-blue-800 hover:bg-blue-100 transition-colors"
+              aria-label="Refresh weather data"
+            >
+              <RefreshCw className="h-4 w-4" />
+            </button>
+          )}
+        </CardTitle>
+        <p className="text-sm text-blue-600 mt-1 font-medium">
+          {weatherData.weatherCondition}
+        </p>
+      </CardHeader>
 
-      <div className="grid grid-cols-2 gap-4 mt-3">
-        <div>
-          <p className="text-sm text-gray-500">Temperature</p>
-          <p className="text-xl font-semibold">{weatherData.temperature}°C</p>
+      <CardContent className="p-6">
+        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+          <WeatherMetric
+            icon={<Thermometer className="h-6 w-6 text-red-500" />}
+            label="Temperature"
+            value={`${weatherData.temperature}°C`}
+            bgColor="bg-red-50"
+            textColor="text-red-700"
+          />
+
+          <WeatherMetric
+            icon={<Droplets className="h-6 w-6 text-blue-500" />}
+            label="Humidity"
+            value={`${weatherData.humidity}%`}
+            bgColor="bg-blue-50"
+            textColor="text-blue-700"
+          />
+
+          <WeatherMetric
+            icon={<Wind className="h-6 w-6 text-teal-500" />}
+            label="Wind Speed"
+            value={`${weatherData.windSpeed} m/s`}
+            bgColor="bg-teal-50"
+            textColor="text-teal-700"
+          />
+
+          <WeatherMetric
+            icon={<Cloud className="h-6 w-6 text-slate-500" />}
+            label="Cloud Cover"
+            value={`${weatherData.cloudCover}%`}
+            bgColor="bg-slate-50"
+            textColor="text-slate-700"
+          />
+
+          <div className="col-span-2 md:col-span-4">
+            <WeatherMetric
+              icon={<Gauge className="h-6 w-6 text-purple-500" />}
+              label="Pressure"
+              value={`${weatherData.pressure} hPa`}
+              bgColor="bg-purple-50"
+              textColor="text-purple-700"
+            />
+          </div>
         </div>
-        <div>
-          <p className="text-sm text-gray-500">Humidity</p>
-          <p className="text-xl font-semibold">{weatherData.humidity}%</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-500">Wind Speed</p>
-          <p className="text-xl font-semibold">{weatherData.windSpeed} m/s</p>
-        </div>
-        <div>
-          <p className="text-sm text-gray-500">Condition</p>
-          <p className="text-xl font-semibold">
-            {weatherData.weatherCondition}
-          </p>
-        </div>
+
+        {lastUpdated && (
+          <div className="mt-6 pt-3 border-t border-blue-100 flex items-center justify-between text-xs text-blue-600">
+            <p>Last updated: {formatLastUpdated(lastUpdated)}</p>
+            <p>{user ? "Updates every 5 minutes" : "Updates every 2 hours"}</p>
+          </div>
+        )}
+      </CardContent>
+    </Card>
+  );
+}
+
+interface WeatherMetricProps {
+  icon: React.ReactNode;
+  label: string;
+  value: string;
+  bgColor: string;
+  textColor: string;
+}
+
+function WeatherMetric({
+  icon,
+  label,
+  value,
+  bgColor,
+  textColor,
+}: WeatherMetricProps) {
+  return (
+    <div
+      className={`flex items-center space-x-3 ${bgColor} p-4 rounded-lg shadow-sm`}
+    >
+      {icon}
+      <div>
+        <p className="text-sm font-medium text-gray-600">{label}</p>
+        <p className={`text-lg font-semibold ${textColor}`}>{value}</p>
       </div>
-
-      {lastUpdated && (
-        <div className="mt-4 text-xs text-gray-500">
-          <p>Last updated: {formatLastUpdated(lastUpdated)}</p>
-          <p className="text-xs mt-1">
-            {user ? "Updates every 5 minutes" : "Updates every 2 hours"}
-          </p>
-        </div>
-      )}
     </div>
   );
 }

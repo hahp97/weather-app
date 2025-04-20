@@ -20,21 +20,9 @@ type WeatherData {
   location: Location
   period: String
   createdAt: DateTime
-}
 
-type AggregatedWeatherData {
-  id: ID
-  timestamp: DateTime
-  temperature: Float
-  minTemperature: Float
-  maxTemperature: Float
-  pressure: Float
-  humidity: Float
-  cloudCover: Float
-  windSpeed: Float
-  count: Int
-  interval: String
-  location: Location
+  # resolver
+  user: User
 }
 
 type WeatherReport {
@@ -59,20 +47,6 @@ type WeatherDeviations {
   humidity: Float
   cloudCover: Float
   windSpeed: Float
-}
-
-type WeatherStatistics {
-  avgTemperature: Float
-  minTemperature: Float
-  maxTemperature: Float
-  avgPressure: Float
-  minPressure: Float
-  maxPressure: Float
-  avgHumidity: Float
-  avgCloudCover: Float
-  avgWindSpeed: Float
-  recordsCount: Int
-  period: String
 }
 
 type WeatherReportComparison {
@@ -111,6 +85,17 @@ input WeatherReportFilter {
   endTime_lte: DateTime
   createdAt_gte: DateTime
   createdAt_lte: DateTime
+  userId: ID
+}
+
+input WeatherReportInput {
+  title: String!
+  startTime: DateTime!
+  endTime: DateTime!
+  temperature: Float
+  pressure: Float
+  humidity: Float
+  cloudCover: Float
 }
 
 type Query {
@@ -119,12 +104,6 @@ type Query {
   
   # Get weather data for a time range
   weatherDataInRange(range: DateRangeInput!, first: Int, skip: Int, sortField: String, sortOrder: String): [WeatherData]
-  
-  # Get aggregated weather data (for charts)
-  aggregatedWeatherData(aggregation: AggregationInput!): [AggregatedWeatherData]
-  
-  # Get weather statistics for dashboard
-  weatherStatistics(days: Int): WeatherStatistics
   
   # Get all weather reports with optional filtering and pagination
   weatherReports(first: Int, skip: Int, filter: WeatherReportFilter, orderBy: [WeatherReportOrder]): [WeatherReport]
@@ -146,15 +125,9 @@ input GenerateWeatherReportInput {
   title: String
 }
 
-type Mutation {
-  # Generate a weather report for a specific time range
-  generateWeatherReport(input: GenerateWeatherReportInput!): CommonResponse
-  
-  # Fetch latest weather data and store it
-  fetchAndStoreWeatherData: CommonResponse
-  
-  # Fetch historical weather data for a specific date and store it
-  fetchHistoricalWeatherData(date: DateTime!): CommonResponse
+type Mutation {  
+  # Save a weather report directly
+  saveWeatherReport(input: WeatherReportInput!): CommonResponse
 }
 
 type WeatherDataSubscriptionPayload {

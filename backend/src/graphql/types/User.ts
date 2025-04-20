@@ -13,6 +13,7 @@ type User {
   mobile: PhoneNumberObject
   active: Boolean
   superAdmin: Boolean
+
 }
 
 # Email Preview for development with Ethereal

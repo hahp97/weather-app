@@ -1,6 +1,9 @@
 "use client";
 
 import EmailPreviewButton from "@/components/EmailPreviewButton";
+import AuthLayout from "@/components/layout/AuthLayout";
+import { Button } from "@/components/ui/button";
+import { Input } from "@/components/ui/input";
 import { useToast } from "@/context/ToastContext";
 import GqlSendOTP from "@/graphql/mutation/auth/send-otp.gql";
 import GqlSignUp from "@/graphql/mutation/auth/sign-up.gql";
@@ -168,218 +171,262 @@ export default function SignupPage() {
     }
   };
 
+  const title = step === "signup" ? "Create Your Account" : "Verify Your Email";
+  const subtitle =
+    step === "signup"
+      ? "Register to access all weather report features"
+      : "Enter the verification code sent to your email";
+
   return (
-    <div className="flex min-h-full flex-col justify-center py-12 sm:px-6 lg:px-8">
-      <div className="sm:mx-auto sm:w-full sm:max-w-md">
-        <h2 className="mt-6 text-center text-3xl font-bold tracking-tight text-gray-900">
-          {step === "signup" ? "Create a new account" : "Verify your email"}
-        </h2>
-      </div>
+    <AuthLayout title={title} subtitle={subtitle} loading={false}>
+      {step === "signup" ? (
+        <form
+          className="space-y-5"
+          onSubmit={handleSignupSubmit(onSignupSubmit)}
+        >
+          <Input
+            id="email"
+            label="Email"
+            type="email"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5 text-gray-400"
+              >
+                <path d="M3 4a2 2 0 00-2 2v1.161l8.441 4.221a1.25 1.25 0 001.118 0L19 7.162V6a2 2 0 00-2-2H3z" />
+                <path d="M19 8.839l-7.77 3.885a2.75 2.75 0 01-2.46 0L1 8.839V14a2 2 0 002 2h14a2 2 0 002-2V8.839z" />
+              </svg>
+            }
+            {...registerSignup("email")}
+            error={signupErrors.email?.message}
+          />
 
-      <div className="mt-8 sm:mx-auto sm:w-full sm:max-w-md">
-        <div className="bg-white py-8 px-4 shadow sm:rounded-lg sm:px-10">
-          {step === "signup" ? (
-            <form
-              className="space-y-6"
-              onSubmit={handleSignupSubmit(onSignupSubmit)}
-            >
-              <div>
-                <label
-                  htmlFor="email"
-                  className="block text-sm font-medium text-gray-700"
+          <Input
+            id="username"
+            label="Username"
+            type="text"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5 text-gray-400"
+              >
+                <path d="M10 8a3 3 0 100-6 3 3 0 000 6zM3.465 14.493a1.23 1.23 0 00.41 1.412A9.957 9.957 0 0010 18c2.31 0 4.438-.784 6.131-2.1.43-.333.604-.903.408-1.41a7.002 7.002 0 00-13.074.003z" />
+              </svg>
+            }
+            {...registerSignup("username")}
+            error={signupErrors.username?.message}
+          />
+
+          <Input
+            id="name"
+            label="Full Name"
+            type="text"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5 text-gray-400"
+              >
+                <path d="M7 8a3 3 0 100-6 3 3 0 000 6zM14.5 9a2.5 2.5 0 100-5 2.5 2.5 0 000 5zM1.615 16.428a1.224 1.224 0 01-.569-1.175 6.002 6.002 0 0111.908 0c.058.467-.172.92-.57 1.174A9.953 9.953 0 017 18a9.953 9.953 0 01-5.385-1.572zM14.5 16h-.106c.07-.297.088-.611.048-.933a7.47 7.47 0 00-1.588-3.755 4.502 4.502 0 015.874 2.636.818.818 0 01-.36.98A7.465 7.465 0 0114.5 16z" />
+              </svg>
+            }
+            {...registerSignup("name")}
+            error={signupErrors.name?.message}
+          />
+
+          <Input
+            id="password"
+            label="Password"
+            type="password"
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5 text-gray-400"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M10 1a4.5 4.5 0 00-4.5 4.5V9H5a2 2 0 00-2 2v6a2 2 0 002 2h10a2 2 0 002-2v-6a2 2 0 00-2-2h-.5V5.5A4.5 4.5 0 0010 1zm3 8V5.5a3 3 0 10-6 0V9h6z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            }
+            {...registerSignup("password")}
+            error={signupErrors.password?.message}
+          />
+
+          <div>
+            <label className="block text-sm font-medium text-gray-700 mb-2">
+              Mobile Number
+            </label>
+            <div className="flex rounded-md shadow-sm">
+              <input
+                id="mobileCode"
+                type="text"
+                {...registerSignup("mobile.code")}
+                className="w-20 rounded-l-md border border-r-0 border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
+              />
+              <input
+                id="mobileNumber"
+                type="text"
+                {...registerSignup("mobile.number")}
+                className="block w-full flex-1 rounded-r-md border border-gray-300 px-3 py-2 focus:border-blue-500 focus:ring-blue-500 focus:outline-none sm:text-sm"
+                placeholder="Mobile number"
+              />
+            </div>
+            <input type="hidden" {...registerSignup("mobile.country")} />
+            {signupErrors.mobile?.number && (
+              <p className="mt-2 text-sm text-red-600">
+                {signupErrors.mobile.number.message}
+              </p>
+            )}
+          </div>
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
                 >
-                  Email
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="email"
-                    type="email"
-                    {...registerSignup("email")}
-                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  />
-                  {signupErrors.email && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {signupErrors.email.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Registering...
+              </>
+            ) : (
+              "Register"
+            )}
+          </Button>
 
-              <div>
-                <label
-                  htmlFor="username"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Username
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="username"
-                    type="text"
-                    {...registerSignup("username")}
-                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  />
-                  {signupErrors.username && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {signupErrors.username.message}
-                    </p>
-                  )}
-                </div>
-              </div>
+          <div className="relative mt-6">
+            <div className="absolute inset-0 flex items-center">
+              <div className="w-full border-t border-gray-300" />
+            </div>
+            <div className="relative flex justify-center text-sm">
+              <span className="bg-white px-2 text-gray-500">
+                Already have an account?
+              </span>
+            </div>
+          </div>
 
-              <div>
-                <label
-                  htmlFor="name"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Name
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="name"
-                    type="text"
-                    {...registerSignup("name")}
-                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  />
-                  {signupErrors.name && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {signupErrors.name.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="password"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Password
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="password"
-                    type="password"
-                    {...registerSignup("password")}
-                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  />
-                  {signupErrors.password && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {signupErrors.password.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <label
-                  htmlFor="mobileNumber"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Mobile Number
-                </label>
-                <div className="mt-1 flex">
-                  <input
-                    id="mobileCode"
-                    type="text"
-                    {...registerSignup("mobile.code")}
-                    className="w-20 rounded-l-md border border-r-0 border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                  />
-                  <input
-                    id="mobileNumber"
-                    type="text"
-                    {...registerSignup("mobile.number")}
-                    className="block w-full flex-1 rounded-r-md border border-gray-300 px-3 py-2 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    placeholder="Mobile number"
-                  />
-                </div>
-                <input type="hidden" {...registerSignup("mobile.country")} />
-                {signupErrors.mobile?.number && (
-                  <p className="mt-2 text-sm text-red-600">
-                    {signupErrors.mobile.number.message}
-                  </p>
-                )}
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                >
-                  {isLoading ? "Registering..." : "Register"}
-                </button>
-              </div>
-            </form>
-          ) : (
-            <form className="space-y-6" onSubmit={handleOTPSubmit(onOTPSubmit)}>
-              <div>
-                <label
-                  htmlFor="otp"
-                  className="block text-sm font-medium text-gray-700"
-                >
-                  Verification Code
-                </label>
-                <div className="mt-1">
-                  <input
-                    id="otp"
-                    type="text"
-                    maxLength={6}
-                    {...registerOTP("otp")}
-                    className="block w-full appearance-none rounded-md border border-gray-300 px-3 py-2 placeholder-gray-400 shadow-sm focus:border-blue-500 focus:outline-none focus:ring-blue-500 sm:text-sm"
-                    placeholder="Enter 6-digit code"
-                  />
-                  {otpErrors.otp && (
-                    <p className="mt-2 text-sm text-red-600">
-                      {otpErrors.otp.message}
-                    </p>
-                  )}
-                </div>
-              </div>
-
-              <div>
-                <button
-                  type="submit"
-                  disabled={isLoading}
-                  className="flex w-full justify-center rounded-md border border-transparent bg-blue-600 py-2 px-4 text-sm font-medium text-white shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50"
-                >
-                  {isLoading ? "Verifying..." : "Verify"}
-                </button>
-              </div>
-
-              {/* Email Preview Button for Development */}
-              {userEmail && (
-                <div className="mt-4">
-                  <EmailPreviewButton
-                    email={userEmail}
-                    className="w-full mt-2"
-                  />
-                </div>
-              )}
-
-              <div className="text-sm text-center">
-                <button
-                  type="button"
-                  onClick={handleResendOTP}
-                  disabled={isLoading}
-                  className="font-medium text-blue-600 hover:text-blue-500"
-                >
-                  Didn&apos;t receive the code? Resend
-                </button>
-              </div>
-            </form>
-          )}
-
-          <div className="mt-6 text-center">
-            <Link
-              href="/login"
-              className="text-sm font-medium text-blue-600 hover:text-blue-500"
-            >
-              Already have an account? Sign in
+          <div className="text-center">
+            <Link href="/login">
+              <Button variant="outline" className="w-full">
+                Sign in to your account
+              </Button>
             </Link>
           </div>
-        </div>
-      </div>
-    </div>
+        </form>
+      ) : (
+        <form className="space-y-5" onSubmit={handleOTPSubmit(onOTPSubmit)}>
+          <div className="bg-blue-50 text-blue-700 p-4 rounded-md mb-6 text-sm">
+            <p>
+              We&apos;ve sent a 6-digit verification code to{" "}
+              <span className="font-medium">{userEmail}</span>
+            </p>
+          </div>
+
+          <Input
+            id="otp"
+            label="Verification Code"
+            type="text"
+            maxLength={6}
+            icon={
+              <svg
+                xmlns="http://www.w3.org/2000/svg"
+                viewBox="0 0 20 20"
+                fill="currentColor"
+                className="w-5 h-5 text-gray-400"
+              >
+                <path
+                  fillRule="evenodd"
+                  d="M9.83 8.79a.75.75 0 01.12 1.06l-4.83 6a.75.75 0 01-1.18-.93l4.83-6a.75.75 0 011.06-.12z"
+                  clipRule="evenodd"
+                />
+                <path
+                  fillRule="evenodd"
+                  d="M6.43 8.44a.75.75 0 01-.43.31H2a.75.75 0 010-1.5h4a.75.75 0 01.43 1.19zm9.57 6.31a.75.75 0 01-.43.31H2a.75.75 0 010-1.5h13.57a.75.75 0 01.43 1.19z"
+                  clipRule="evenodd"
+                />
+              </svg>
+            }
+            placeholder="Enter 6-digit code"
+            {...registerOTP("otp")}
+            error={otpErrors.otp?.message}
+          />
+
+          <Button type="submit" disabled={isLoading} className="w-full">
+            {isLoading ? (
+              <>
+                <svg
+                  className="animate-spin -ml-1 mr-2 h-4 w-4 text-white"
+                  xmlns="http://www.w3.org/2000/svg"
+                  fill="none"
+                  viewBox="0 0 24 24"
+                >
+                  <circle
+                    className="opacity-25"
+                    cx="12"
+                    cy="12"
+                    r="10"
+                    stroke="currentColor"
+                    strokeWidth="4"
+                  ></circle>
+                  <path
+                    className="opacity-75"
+                    fill="currentColor"
+                    d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"
+                  ></path>
+                </svg>
+                Verifying...
+              </>
+            ) : (
+              "Verify"
+            )}
+          </Button>
+
+          {/* Email Preview Button for Development */}
+          {userEmail && (
+            <div className="mt-4">
+              <EmailPreviewButton
+                email={userEmail}
+                className="w-full shadow-sm transition-colors hover:bg-gray-50"
+              />
+            </div>
+          )}
+
+          <div className="text-center mt-4">
+            <button
+              type="button"
+              onClick={handleResendOTP}
+              disabled={isLoading}
+              className="text-sm font-medium text-blue-600 hover:text-blue-500 transition-colors"
+            >
+              Didn&apos;t receive the code? Resend
+            </button>
+          </div>
+        </form>
+      )}
+    </AuthLayout>
   );
 }

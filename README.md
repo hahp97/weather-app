@@ -1,97 +1,242 @@
-# Changi Airport Weather Report System
+# Changi Airport Weather Report System (Scanner)
 
-A full-stack application for monitoring and analyzing weather data at Changi Airport, Singapore.
+A comprehensive full-stack application for monitoring, analyzing, and comparing weather data at Changi Airport, Singapore (Latitude: 1.3586° N, Longitude: 103.9899° E).
 
-## Features
+![Weather Report Dashboard](image.png)
 
-- Real-time weather data collection from OpenWeather API
-- Time-series storage of weather metrics (temperature, pressure, humidity, cloud cover)
-- Weather report generation for specific time periods
-- Historical reports viewing and comparison
-- Deviation analysis between different time periods
+## Overview
 
-## Project Structure
+This system fulfills the requirements of the Scanner Technical Assessment, providing a robust solution for real-time and historical weather monitoring at Changi Airport. The application enables users to generate reports of current weather conditions, store these reports for future reference, and perform comparative analysis between different time periods.
 
-- **Backend**: Node.js with GraphQL API, MongoDB time-series collections
-- **Frontend**: (To be implemented) React.js with modern UI components
+## Key Features
 
-## Technical Stack
+- **Weather Data Collection**: Automated retrieval of weather metrics from OpenWeather API
+- **Report Generation**: On-demand creation of weather reports with key metrics
+- **Historical Data**: Browsing and filtering of previously generated reports
+- **Comparison Tools**: Side-by-side comparison of reports with deviation calculation
+- **User Authentication**: Secure login and account management for personalized experience
 
-- **Backend**:
-  - Node.js with Express
-  - GraphQL with Apollo Server
-  - MongoDB with Prisma ORM
-  - Background jobs for data collection
-- **Frontend**:
-  - React.js (to be implemented)
-  - Apollo Client (to be implemented)
-  - Tailwind CSS (recommended)
+## Assessment Requirements Implementation
 
-## Setup Instructions
+| Requirement                     | Implementation                                                  |
+| ------------------------------- | --------------------------------------------------------------- |
+| **Weather Report Generation**   | ✅ UI for generating reports for current or selected timestamps |
+| **History Page**                | ✅ Tabular view with timestamp and all required metrics         |
+| **Comparison Page**             | ✅ Side-by-side comparison with deviation calculations          |
+| **OpenWeather API Integration** | ✅ Secure backend integration with error handling               |
+| **Data Storage**                | ✅ Efficient MongoDB time-series collections                    |
+| **Navigation & UX**             | ✅ Intuitive navigation with loading states                     |
+
+## System Architecture
+
+The system follows a modern full-stack architecture, leveraging:
+
+```
+┌─────────────────┐     ┌─────────────────┐     ┌─────────────────┐
+│  OpenWeather    │     │  Backend API    │     │    Frontend     │
+│      API        │◄────┤  (GraphQL)      │◄────┤  (Next.js)      │
+└─────────────────┘     └───────┬─────────┘     └─────────────────┘
+                               │
+                      ┌────────▼────────┐
+                      │    MongoDB      │
+                      │  (Time Series)  │
+                      └─────────────────┘
+```
+
+For detailed implementation information, please refer to:
+
+- [Backend Documentation](./backend/README.md)
+- [Frontend Documentation](./frontend/README.md)
+
+### Technology Stack
+
+#### Frontend
+
+- **Next.js** with React for server-rendered UI
+- **Apollo Client** for GraphQL data fetching
+- **Tailwind CSS** for responsive design
+- **TypeScript** for type safety
+
+#### Backend
+
+- **Node.js** with Express
+- **GraphQL** with Apollo Server
+- **MongoDB** with time-series collections
+- **Prisma ORM** for database access
+- **JWT** for authentication
+
+## Getting Started
 
 ### Prerequisites
 
-- Node.js (v14+)
+- Node.js (v16+)
 - MongoDB (v5+ with time series collections support)
-- OpenWeather API key
+- OpenWeather API key (sign up at [OpenWeather](https://openweathermap.org/))
 
-### Environment Variables
+### Quick Start
 
-Create a `.env` file in the backend directory with the following variables:
+1. **Clone the repository**
 
-```
-PORT=4000
-DATABASE_URL=mongodb://localhost:27017/weather_report
-SECRET_KEY_BASE=your_secret_key
-OPEN_WEATHER_API_KEY=your_openweather_api_key
-```
-
-### Backend Setup
-
-1. Install dependencies:
-
+   ```bash
+   git clone https://github.com/yourusername/weather_report.git
+   cd weather_report
    ```
+
+2. **Set up the backend**
+
+   ```bash
    cd backend
    npm install
-   ```
 
-2. Generate Prisma client:
-
-   ```
+   # Configure environment variables (see below)
+   # Then generate Prisma client and start the server
    npx prisma generate
-   ```
-
-3. Start the development server:
-
-   ```
    npm run dev
    ```
 
-4. The GraphQL server will be available at http://localhost:4000/graphql
+3. **Set up the frontend**
 
-### Data Collection
+   ```bash
+   cd ../frontend
+   npm install
 
-The system automatically collects weather data every 5 minutes using a background job.
+   # Configure environment variables (see below)
+   # Then start the development server
+   npm run dev
+   ```
 
-### API Endpoints
+4. **Access the application**
+   - Frontend: http://localhost:3000
+   - GraphQL API: http://localhost:4000/graphql
 
-All API interactions are through GraphQL. Key operations:
+### Environment Configuration
 
-- Query current weather
-- Generate weather reports for specific time periods
-- View historical reports
-- Compare two reports and calculate deviations
+#### Backend (.env)
 
-## Implementation Notes
+```
+DATABASE_URL="mongodb://localhost/weather_report_development?directConnection=true"
+SECRET1="your_secret_key_1"
+SECRET2="your_secret_key_2"
+JWT_SECRET="your_jwt_secret"
+FRONTEND_URL="http://localhost:3000"
+PORT=4000
+NODE_ENV="development"
+OPEN_WEATHER_API_KEY="your_openweather_api_key"
+EMAIL_HOST="smtp.ethereal.email"
+EMAIL_PORT=587
+EMAIL_USER=""
+EMAIL_PASS=""
+EMAIL_FROM="noreply@weatherreport.com"
+```
 
-- The system uses MongoDB time-series collections for efficient storage and querying of temporal data
-- Weather data is automatically collected in the background at regular intervals
-- Reports are generated by aggregating data points over specific time periods
+#### Frontend (.env.local)
 
-## Development Roadmap
+```
+NEXT_PUBLIC_API_URL=http://localhost:4000/graphql
+```
 
-1. Complete backend implementation with all GraphQL resolvers
-2. Build frontend with React.js
-3. Add authentication for user-specific reports
-4. Implement caching for improved performance
-5. Add data visualization for weather trends
+## Project Structure
+
+The project is organized into two main directories:
+
+- **[Backend](./backend/README.md)**: Node.js/GraphQL server with MongoDB
+- **[Frontend](./frontend/README.md)**: Next.js/React application
+
+Each directory has its own detailed README with specific implementation details.
+
+## Technical Documentation
+
+### Project Approach
+
+This implementation follows modern web development practices with a focus on:
+
+1. **Type Safety**: TypeScript throughout the codebase ensures type safety and improves developer experience
+2. **Component-Based Architecture**: Modular components for UI and backend services
+3. **API-First Design**: GraphQL schema defines the contract between frontend and backend
+4. **Automated Data Collection**: Background jobs ensure consistent weather data collection
+
+### Additional Features
+
+Beyond the core requirements, the implementation includes:
+
+#### Enhanced Security
+
+- JWT-based authentication
+- HTTP-only cookies for token storage
+- Password hashing with bcrypt
+- Rate limiting for API endpoints
+- Input validation with Zod
+
+#### Performance Optimizations
+
+- MongoDB time-series collections for efficient temporal data storage
+- GraphQL data loaders for batching and caching
+- Apollo Client cache for reduced network requests
+- Server-side rendering for improved initial load time
+
+#### Developer Experience
+
+- Comprehensive TypeScript types
+- Modular code structure
+- Detailed documentation
+- Consistent code style and formatting
+
+#### User Experience
+
+- Responsive design for all device sizes
+- Intuitive navigation
+- Loading states and error handling
+- Form validation and feedback
+
+## Testing
+
+The project includes comprehensive testing:
+
+### Backend Tests
+
+- Unit tests for API resolvers
+- Integration tests for database services
+- Authentication tests for security features
+
+### Frontend Tests
+
+- Component tests with React Testing Library
+- Custom hook tests
+- End-to-end flows with Playwright
+
+Run tests with:
+
+```bash
+# Backend tests
+cd backend
+npm test
+
+# Frontend tests
+cd frontend
+npm test
+```
+
+## Future Enhancements
+
+The system is designed to be extensible for future requirements:
+
+1. **Administrative Dashboard**: User management and system monitoring
+2. **Extended Metrics**: Additional weather data points beyond the core requirements
+3. **Subscription Model**: Premium features for paid users
+4. **Mobile Applications**: Native mobile apps for iOS and Android
+5. **Advanced Analytics**: Statistical analysis and weather prediction
+6. **Containerization**: Docker setup for easier deployment
+7. **Cloud Deployment**: AWS/GCP/Azure deployment configurations
+
+## Contribution Guidelines
+
+1. Fork the repository
+2. Create a feature branch
+3. Make your changes
+4. Submit a pull request
+
+## License
+
+This project is proprietary and confidential.
+
+---

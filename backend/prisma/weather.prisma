@@ -21,9 +21,9 @@ model WeatherReport {
     // Link to user who generated the report
     userId String? @db.ObjectId
 
-    createdAt DateTime @default(now())
-    updatedAt DateTime @updatedAt
-    User      User?    @relation(fields: [userId], references: [id])
+    createdAt DateTime  @default(now())
+    updatedAt DateTime  @updatedAt
+    deletedAt DateTime?
 
     @@map("weather_reports")
 }

@@ -4,11 +4,17 @@ query GetWeatherReports(
   $first: Int
   $skip: Int
   $orderBy: [WeatherReportOrder]
+  $filter: WeatherReportFilter
 ) {
-  weatherReports(first: $first, skip: $skip, orderBy: $orderBy) {
+  weatherReports(
+    first: $first
+    skip: $skip
+    filter: $filter
+    orderBy: $orderBy
+  ) {
     ...WeatherReportFragment
   }
-  weatherReportsMeta {
+  weatherReportsMeta(filter: $filter) {
     count
   }
 }

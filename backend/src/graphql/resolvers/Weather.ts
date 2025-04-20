@@ -1,5 +1,8 @@
 import { openWeatherClient } from "@/api/openweather";
 import * as weatherService from "@/database/weatherService";
+import { AppContext } from "@/types";
+import buildPrismaFilter from "@/utils/buildPrismaFilter";
+import buildPrismaOrder from "@/utils/buildPrismaOrder";
 import { GraphQLError } from "graphql";
 
 interface DateRangeInput {
@@ -11,12 +14,6 @@ interface AggregationInput {
   startTime: Date;
   endTime: Date;
   interval?: string;
-}
-
-interface GenerateWeatherReportInput {
-  startTime: Date;
-  endTime: Date;
-  title?: string;
 }
 
 interface WeatherReportFilter {
@@ -39,14 +36,21 @@ interface QueryWeatherReportsArgs {
 }
 
 export default {
+  WeatherData: {
+    user: async (parent: any, args: any, context: AppContext, info: any) => {
+      const { prisma } = context;
+      return prisma.user.findFirst({
+        where: { id: parent.userId },
+      });
+    },
+  },
   Query: {
     currentWeather: async () => {
       try {
         const data = await openWeatherClient.getCurrentWeather();
 
-        // Weather data from client already has all the required fields
         return {
-          id: "current", // Since this is just the current weather and not stored in DB
+          id: "current",
           ...data,
         };
       } catch (error) {
@@ -56,7 +60,6 @@ export default {
         });
       }
     },
-
     weatherDataInRange: async (
       _: any,
       {
@@ -89,40 +92,35 @@ export default {
         });
       }
     },
+    weatherReports: async (_: any, args: QueryWeatherReportsArgs, context: AppContext) => {
+      const { authorizedUser, prisma } = context;
 
-    aggregatedWeatherData: async (_: any, { aggregation }: { aggregation: AggregationInput }) => {
-      try {
-        const { startTime, endTime, interval } = aggregation;
-        return await weatherService.getAggregatedWeatherData(
-          new Date(startTime),
-          new Date(endTime),
-          (interval as any) || "hour"
-        );
-      } catch (error) {
-        console.error("Error fetching aggregated weather data:", error);
-        throw new GraphQLError("Failed to fetch aggregated weather data", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
+      if (!authorizedUser) {
+        throw new GraphQLError("Authentication required", {
+          extensions: { code: "UNAUTHENTICATED" },
         });
       }
-    },
 
-    weatherStatistics: async (_: any, { days }: { days?: number }) => {
-      try {
-        return await weatherService.getWeatherStatistics(days || 7);
-      } catch (error) {
-        console.error("Error fetching weather statistics:", error);
-        throw new GraphQLError("Failed to fetch weather statistics", {
-          extensions: { code: "INTERNAL_SERVER_ERROR" },
-        });
-      }
-    },
-
-    weatherReports: async (_: any, args: QueryWeatherReportsArgs, { user }: { user?: any }) => {
       try {
         const { first, skip, filter, orderBy } = args;
-        // If user is authenticated, get their reports, otherwise get all public reports
-        const userId = user?.id;
-        return await weatherService.getAllWeatherReports(userId, first, skip, filter, orderBy);
+        // Get reports for the authenticated user
+        const userId = authorizedUser.id;
+
+        const reports = await prisma.weatherReport.findMany({
+          where: buildPrismaFilter({
+            ...filter,
+            userId,
+          }),
+          orderBy: buildPrismaOrder(orderBy || []),
+          take: first || 100,
+          skip: skip || 0,
+        });
+
+        return reports.map((report) => ({
+          ...report,
+          startTime: report.startTime.toISOString(),
+          endTime: report.endTime.toISOString(),
+        }));
       } catch (error) {
         console.error("Error fetching weather reports:", error);
         throw new GraphQLError("Failed to fetch weather reports", {
@@ -130,10 +128,23 @@ export default {
         });
       }
     },
+    weatherReportsMeta: async (_: any, { filter }: { filter?: WeatherReportFilter }, context: AppContext) => {
+      const { authorizedUser, prisma } = context;
 
-    weatherReportsMeta: async (_: any, { filter }: { filter?: WeatherReportFilter }) => {
+      if (!authorizedUser) {
+        throw new GraphQLError("Authentication required", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
+
       try {
-        const count = await weatherService.countWeatherReports(filter);
+        const count = await prisma.weatherReport.count({
+          where: buildPrismaFilter({
+            ...filter,
+            userId: authorizedUser.id,
+          }),
+        });
+
         return { count };
       } catch (error) {
         console.error("Error fetching weather reports meta:", error);
@@ -142,10 +153,34 @@ export default {
         });
       }
     },
+    weatherReport: async (_: any, { id }: { id: string }, context: AppContext) => {
+      const { authorizedUser, prisma } = context;
 
-    weatherReport: async (_: any, { id }: { id: string }) => {
+      if (!authorizedUser) {
+        throw new GraphQLError("Authentication required", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
+
       try {
-        return await weatherService.getWeatherReportById(id);
+        const report = await prisma.weatherReport.findFirst({
+          where: buildPrismaFilter({
+            id,
+            userId: authorizedUser.id,
+          }),
+        });
+
+        if (!report) {
+          throw new GraphQLError("Weather report not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        return {
+          ...report,
+          startTime: report.startTime.toISOString(),
+          endTime: report.endTime.toISOString(),
+        };
       } catch (error) {
         console.error("Error fetching weather report:", error);
         throw new GraphQLError("Failed to fetch weather report", {
@@ -153,10 +188,61 @@ export default {
         });
       }
     },
+    compareWeatherReports: async (
+      _: any,
+      { reportId1, reportId2 }: { reportId1: string; reportId2: string },
+      context: AppContext
+    ) => {
+      const { authorizedUser, prisma } = context;
+      // Require authentication for comparing reports
+      if (!authorizedUser) {
+        throw new GraphQLError("Authentication required", {
+          extensions: { code: "UNAUTHENTICATED" },
+        });
+      }
 
-    compareWeatherReports: async (_: any, { reportId1, reportId2 }: { reportId1: string; reportId2: string }) => {
       try {
-        return await weatherService.compareWeatherReports(reportId1, reportId2);
+        const [report1, report2] = await prisma.weatherReport.findMany({
+          where: {
+            OR: [
+              { id: reportId1, userId: authorizedUser.id },
+              { id: reportId2, userId: authorizedUser.id },
+            ],
+          },
+        });
+
+        if (!report1 || !report2) {
+          throw new GraphQLError("One or both reports not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        if (!report1 || !report2) {
+          throw new GraphQLError("One or both reports not found", {
+            extensions: { code: "NOT_FOUND" },
+          });
+        }
+
+        const comparison = {
+          report1: {
+            ...report1,
+            startTime: report1.startTime.toISOString(),
+            endTime: report1.endTime.toISOString(),
+          },
+          report2: {
+            ...report2,
+            startTime: report2.startTime.toISOString(),
+            endTime: report2.endTime.toISOString(),
+          },
+          deviations: {
+            temperature: Math.abs((report2.avgTemperature || 0) - (report1.avgTemperature || 0)),
+            pressure: Math.abs((report2.avgPressure || 0) - (report1.avgPressure || 0)),
+            humidity: Math.abs((report2.avgHumidity || 0) - (report1.avgHumidity || 0)),
+            cloudCover: Math.abs((report2.avgCloudCover || 0) - (report1.avgCloudCover || 0)),
+          },
+        };
+
+        return comparison;
       } catch (error) {
         console.error("Error comparing weather reports:", error);
         throw new GraphQLError("Failed to compare weather reports", {
@@ -164,7 +250,6 @@ export default {
         });
       }
     },
-
     weatherDataMeta: async (_: any, { range }: { range: DateRangeInput }) => {
       try {
         const count = await weatherService.countWeatherData(new Date(range.startTime), new Date(range.endTime));
@@ -177,80 +262,48 @@ export default {
       }
     },
   },
-
   Mutation: {
-    generateWeatherReport: async (
-      _: any,
-      { input }: { input: GenerateWeatherReportInput },
-      { user }: { user?: any }
-    ) => {
+    saveWeatherReport: async (_: any, { input }: { input: any }, context: AppContext) => {
+      const { prisma, authorizedUser } = context;
+
       try {
-        const userId = user?.id; // Will be undefined if user is not authenticated
-        const report = await weatherService.generateWeatherReport(
-          new Date(input.startTime),
-          new Date(input.endTime),
-          userId,
-          input.title
-        );
-
-        return {
-          success: true,
-          message: "Weather report generated successfully",
-          data: { report },
-        };
-      } catch (error) {
-        console.error("Error generating weather report:", error);
-        return {
-          success: false,
-          message: "Failed to generate weather report",
-          errors: [{ message: error instanceof Error ? error.message : "Unknown error" }],
-        };
-      }
-    },
-
-    fetchAndStoreWeatherData: async () => {
-      try {
-        const data = await weatherService.fetchAndStoreCurrentWeather();
-
-        return {
-          success: true,
-          message: "Weather data fetched and stored successfully",
-          data: { weather: data },
-        };
-      } catch (error) {
-        console.error("Error fetching and storing weather data:", error);
-        return {
-          success: false,
-          message: "Failed to fetch and store weather data",
-          errors: [{ message: error instanceof Error ? error.message : "Unknown error" }],
-        };
-      }
-    },
-
-    fetchHistoricalWeatherData: async (_: any, { date }: { date: string | Date }) => {
-      try {
-        const dateObj = new Date(date);
-
-        if (isNaN(dateObj.getTime())) {
+        if (!authorizedUser) {
           return {
             success: false,
-            message: "Invalid date format",
-            errors: [{ message: "The provided date is not valid" }],
+            message: "Authentication required",
+            errors: [{ message: "Authentication required" }],
           };
         }
 
-        const data = await weatherService.fetchAndStoreHistoricalWeather(dateObj);
+        const userId = authorizedUser.id;
+        const { title, startTime, endTime, temperature, pressure, humidity, cloudCover } = input;
+
+        // Create a simplified report with user data
+        const reportData = {
+          title: title,
+          startTime: new Date(startTime),
+          endTime: new Date(endTime),
+          avgTemperature: temperature,
+          avgPressure: pressure,
+          avgHumidity: humidity,
+          avgCloudCover: cloudCover,
+          dataPointsCount: 1,
+          userId: userId,
+        };
+
+        await prisma.weatherReport.create({
+          data: reportData,
+        });
 
         return {
           success: true,
-          message: "Historical weather data fetched and stored successfully",
-          data: { weather: data },
+          message: "Weather report saved successfully",
         };
       } catch (error) {
-        console.error("Error fetching historical weather data:", error);
+        console.error("Error saving weather report:", error);
         return {
           success: false,
-          message: "Failed to fetch historical weather data",
+          message: "Failed to save weather report",
           errors: [{ message: error instanceof Error ? error.message : "Unknown error" }],
         };
       }
