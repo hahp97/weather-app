@@ -9,6 +9,7 @@ import {
   PopoverContent,
   PopoverTrigger,
 } from "@/components/ui/popover";
+import { Select } from "@/components/ui/select";
 import { DateRangeFilter } from "@/components/weather/DateRangeFilter";
 import { HourFilter } from "@/components/weather/HourFilter";
 import { WeatherDataTable } from "@/components/weather/WeatherDataTable";
@@ -41,7 +42,7 @@ export default function GeneratePage() {
   } = useWeatherData();
 
   const [autoRefresh, setAutoRefresh] = useState(true);
-  const [refreshInterval, setRefreshInterval] = useState(30); // seconds
+  const [refreshInterval, setRefreshInterval] = useState(1200); // seconds
   const [nextRefresh, setNextRefresh] = useState(refreshInterval);
   const [isRefreshing, setIsRefreshing] = useState(false);
 
@@ -78,6 +79,13 @@ export default function GeneratePage() {
       setNextRefresh(refreshInterval);
     }
   }, [state.showDataPointsView]);
+
+  // Format seconds as MM:SS
+  const formatCountdown = (seconds: number) => {
+    const minutes = Math.floor(seconds / 60);
+    const remainingSeconds = seconds % 60;
+    return `${minutes}:${remainingSeconds.toString().padStart(2, "0")}`;
+  };
 
   const refreshDataPoints = async () => {
     if (!state.showDataPointsView) return;
@@ -132,7 +140,7 @@ export default function GeneratePage() {
                       }`}
                     />
                     {autoRefresh
-                      ? `Auto-refresh in ${nextRefresh}s`
+                      ? `Auto-refresh in ${formatCountdown(nextRefresh)}`
                       : "Auto-refresh off"}
                   </div>
                   <Button
@@ -153,20 +161,20 @@ export default function GeneratePage() {
                     Refresh Now
                   </Button>
                 </div>
-                <select
-                  className="text-sm border rounded px-2 py-1"
-                  value={refreshInterval}
+                <Select
+                  className="text-sm px-2 w-24"
+                  value={refreshInterval.toString()}
                   onChange={(e) => {
                     const newInterval = parseInt(e.target.value);
                     setRefreshInterval(newInterval);
                     setNextRefresh(newInterval);
                   }}
                 >
-                  <option value={15}>15s</option>
-                  <option value={30}>30s</option>
-                  <option value={60}>1m</option>
-                  <option value={300}>5m</option>
-                </select>
+                  <option value="600">10m</option>
+                  <option value="900">15m</option>
+                  <option value="1200">20m</option>
+                  <option value="1800">30m</option>
+                </Select>
               </div>
             )}
           </CardTitle>

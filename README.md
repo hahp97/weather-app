@@ -89,9 +89,19 @@ For detailed implementation information, please refer to:
    npm install
 
    # Configure environment variables (see below)
-   # Then generate Prisma client and start the server
+
+   # Generate Prisma client
    npx prisma generate
+
+   # Seed the database with test users and sample data
+   npm run db:seed
+   # or
+   yarn db:seed
+
+   # Start the server
    npm run dev
+   # or
+   yarn dev
    ```
 
 3. **Set up the frontend**
@@ -103,11 +113,22 @@ For detailed implementation information, please refer to:
    # Configure environment variables (see below)
    # Then start the development server
    npm run dev
+   # or
+   yarn dev
    ```
 
 4. **Access the application**
    - Frontend: http://localhost:3000
    - GraphQL API: http://localhost:4000/graphql
+5. **Login with seed accounts**
+
+   You can log in with any of the following pre-configured accounts:
+
+   | Email             | Password     | Role                    |
+   | ----------------- | ------------ | ----------------------- |
+   | admin@weather.com | Password123! | Admin                   |
+   | user@weather.com  | Password123! | User                    |
+   | demo@weather.com  | Password123! | User (with sample data) |
 
 ### Environment Configuration
 
@@ -190,31 +211,148 @@ Beyond the core requirements, the implementation includes:
 
 ## Testing
 
-The project includes comprehensive testing:
+The project includes comprehensive testing for both frontend and backend:
 
 ### Backend Tests
 
-- Unit tests for API resolvers
-- Integration tests for database services
-- Authentication tests for security features
+Backend uses Jest and supertest for testing:
+
+- **Unit tests**: Testing GraphQL resolvers, controllers, and services
+- **Integration tests**: Testing integration flow from API to database
+- **API Client Tests**: Testing integration with OpenWeather API
+
+#### Running Backend Tests
+
+```bash
+# Navigate to backend directory
+cd backend
+
+# Install dependencies
+yarn install
+# or
+npm install
+
+# Run all tests
+yarn test
+# or
+npm test
+
+# Run specific test
+yarn test src/api/openweather/__tests__/client.test.ts
+```
 
 ### Frontend Tests
 
-- Component tests with React Testing Library
-- Custom hook tests
-- End-to-end flows with Playwright
+Frontend uses Jest and React Testing Library:
 
-Run tests with:
+- **Component tests**: Testing React components like WeatherCard, WeatherDisplay...
+- **Logic tests**: Testing custom hooks and utilities
+- **Mock tests**: Testing with mock data for GraphQL and context APIs
+
+#### Running Frontend Tests
 
 ```bash
-# Backend tests
-cd backend
+# Navigate to frontend directory
+cd frontend
+
+# Install dependencies
+yarn install
+# or
+npm install
+
+# Run all tests
+yarn test
+# or
 npm test
 
-# Frontend tests
-cd frontend
-npm test
+# Run tests in watch mode
+yarn test:watch
+# or
+npm run test:watch
+
+# Run specific test
+yarn test src/components/weather/__tests__/WeatherDisplay.test.tsx
 ```
+
+### Test Structure
+
+#### Backend test structure:
+
+```
+backend/
+  ├── src/
+  │   ├── api/
+  │   │   └── openweather/
+  │   │       └── __tests__/
+  │   │           └── client.test.ts
+  │   ├── graphql/
+  │   │   └── resolvers/
+  │   │       └── __tests__/
+  │   │           └── weather.test.ts (planned)
+  │   └── ...
+  ├── jest.config.js
+  └── jest/
+      └── setup.ts
+```
+
+#### Frontend test structure:
+
+```
+frontend/
+  ├── src/
+  │   ├── components/
+  │   │   └── weather/
+  │   │       └── __tests__/
+  │   │           ├── WeatherCard.test.tsx
+  │   │           └── WeatherDisplay.test.tsx
+  │   ├── hooks/
+  │   │   └── __tests__/
+  │   │       └── useWeatherData.test.ts (planned)
+  │   └── ...
+  ├── jest.config.js
+  └── jest.setup.js
+```
+
+### Testing Notes
+
+- **TypeScript Configuration**: The TypeScript configuration files (`tsconfig.json`) have been set up to ignore test files, ensuring the build process is not affected by test files
+- **Mocks**: External modules like Apollo Client and context APIs are mocked for independent testing
+- **API Integration**: API services are mocked to enable testing without actual connections
+
+## Seed Users
+
+The application comes with pre-configured seed users for easier testing and development. After setting up the backend, you can run the database seed command to create these users:
+
+```bash
+cd backend
+yarn db:seed
+# or
+npm run db:seed
+```
+
+### Default Users
+
+| Email             | Password     | Role  | Description                             |
+| ----------------- | ------------ | ----- | --------------------------------------- |
+| admin@weather.com | Password123! | Admin | Administrator account with full access  |
+| user@weather.com  | Password123! | User  | Standard user account                   |
+| demo@weather.com  | Password123! | User  | Demo account with pre-populated reports |
+
+These accounts provide different levels of access to the system:
+
+- **Admin**: Can manage users, view all reports, and access system settings
+- **User**: Can create reports, view their own history, and make comparisons
+- **Demo**: Similar to User but has pre-generated weather reports for demonstration
+
+### Seed Data
+
+The seed script also creates:
+
+- 10 historical weather reports for the demo user
+- System settings configuration
+- Example comparison presets
+
+You can modify the seed data by editing the file at `backend/src/database/seed.ts`.
 
 ## Future Enhancements
 

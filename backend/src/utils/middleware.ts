@@ -81,7 +81,10 @@ export const requireAdmin: MiddlewareFunction = async (req, res, next) => {
 export const limiter = slowDown({
   windowMs: 15 * 60 * 1000, // 15 minutes
   delayAfter: 100, // allow 100 requests per window without delay
-  delayMs: 500, // add 500ms delay after limit is reached
+  delayMs: (used, req) => {
+    const delayAfter = req.slowDown.limit;
+    return (used - delayAfter) * 500;
+  },
   maxDelayMs: 20000, // max delay is 20 seconds
   skip: (req) => {
     // Skip rate limiting for trusted IPs or development environment

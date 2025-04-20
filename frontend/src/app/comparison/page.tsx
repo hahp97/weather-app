@@ -1,5 +1,6 @@
 "use client";
 
+import { ComparisonRow } from "@/components/ComparisonRow";
 import { AuthModal } from "@/components/modal/AuthModal";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
@@ -226,7 +227,7 @@ export default function ComparisonPage() {
   const { report1, report2, deviations } = comparisonData;
 
   return (
-    <div className="min-h-screen bg-gradient-to-b from-blue-50 to-white pb-16">
+    <div className="bg-gradient-to-b from-blue-50 to-white pb-16">
       {/* Authentication Modal */}
       <AuthModal
         isOpen={showAuthModal}
@@ -274,20 +275,6 @@ export default function ComparisonPage() {
                 {formatDate(report1.createdAt)}
               </div>
             </CardHeader>
-            <div className="absolute -bottom-6 -right-6 opacity-10">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-24 h-24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 01-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 01-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 01-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584zM12 18a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
           </Card>
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-gray-500 to-gray-600 text-white text-center overflow-hidden">
@@ -295,20 +282,6 @@ export default function ComparisonPage() {
               <CardTitle className="text-lg font-medium">Difference</CardTitle>
               <div className="text-sm text-gray-200">Comparison Analysis</div>
             </CardHeader>
-            <div className="absolute -bottom-6 -right-6 opacity-10">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-24 h-24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M12 2.25c-5.385 0-9.75 4.365-9.75 9.75s4.365 9.75 9.75 9.75 9.75-4.365 9.75-9.75S17.385 2.25 12 2.25zM12.75 6a.75.75 0 00-1.5 0v6c0 .414.336.75.75.75h4.5a.75.75 0 000-1.5h-3.75V6z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
           </Card>
 
           <Card className="border-0 shadow-md bg-gradient-to-br from-green-500 to-green-600 text-white overflow-hidden">
@@ -320,27 +293,13 @@ export default function ComparisonPage() {
                 {formatDate(report2.createdAt)}
               </div>
             </CardHeader>
-            <div className="absolute -bottom-6 -right-6 opacity-10">
-              <svg
-                xmlns="http://www.w3.org/2000/svg"
-                viewBox="0 0 24 24"
-                fill="currentColor"
-                className="w-24 h-24"
-              >
-                <path
-                  fillRule="evenodd"
-                  d="M2.25 12c0-5.385 4.365-9.75 9.75-9.75s9.75 4.365 9.75 9.75-4.365 9.75-9.75 9.75S2.25 17.385 2.25 12zm11.378-3.917c-.89-.777-2.366-.777-3.255 0a.75.75 0 01-.988-1.129c1.454-1.272 3.776-1.272 5.23 0 1.513 1.324 1.513 3.518 0 4.842a3.75 3.75 0 01-.837.552c-.676.328-1.028.774-1.028 1.152v.75a.75.75 0 01-1.5 0v-.75c0-1.279 1.06-2.107 1.875-2.502.182-.088.351-.199.503-.331.83-.727.83-1.857 0-2.584zM12 18a.75.75 0 100-1.5.75.75 0 000 1.5z"
-                  clipRule="evenodd"
-                />
-              </svg>
-            </div>
           </Card>
         </div>
 
         {/* Comparison metrics */}
         <Card className="border-0 shadow-lg bg-white overflow-hidden relative">
           <div className="absolute top-0 right-0 left-0 h-1.5 bg-gradient-to-r from-blue-500 via-indigo-500 to-green-500"></div>
-          <CardContent className="p-0">
+          <CardContent>
             <div className="divide-y">
               {/* Temperature */}
               <ComparisonRow
@@ -446,167 +405,9 @@ export default function ComparisonPage() {
                 color1="blue"
                 color2="green"
               />
-
-              {/* Data Points */}
-              <div className="grid grid-cols-3 gap-6 p-6 bg-gray-50">
-                <div className="flex items-center">
-                  <div className="mr-4 text-xl flex-shrink-0">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-6 h-6 text-blue-500"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z"
-                        clipRule="evenodd"
-                      />
-                      <path
-                        fillRule="evenodd"
-                        d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Data Points
-                    </h3>
-                    <p className="text-xl font-semibold text-blue-600">
-                      {report1.dataPointsCount || 0}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center justify-center">
-                  <div className="text-center">
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Difference
-                    </h3>
-                    <p className="text-xl font-semibold text-gray-700">
-                      {Math.abs(
-                        (report1.dataPointsCount || 0) -
-                          (report2.dataPointsCount || 0)
-                      )}
-                    </p>
-                  </div>
-                </div>
-
-                <div className="flex items-center">
-                  <div className="mr-4 text-xl flex-shrink-0">
-                    <svg
-                      xmlns="http://www.w3.org/2000/svg"
-                      viewBox="0 0 24 24"
-                      fill="currentColor"
-                      className="w-6 h-6 text-green-500"
-                    >
-                      <path
-                        fillRule="evenodd"
-                        d="M2.25 13.5a8.25 8.25 0 018.25-8.25.75.75 0 01.75.75v6.75H18a.75.75 0 01.75.75 8.25 8.25 0 01-16.5 0z"
-                        clipRule="evenodd"
-                      />
-                      <path
-                        fillRule="evenodd"
-                        d="M12.75 3a.75.75 0 01.75-.75 8.25 8.25 0 018.25 8.25.75.75 0 01-.75.75h-7.5a.75.75 0 01-.75-.75V3z"
-                        clipRule="evenodd"
-                      />
-                    </svg>
-                  </div>
-                  <div>
-                    <h3 className="text-sm font-medium text-gray-500">
-                      Data Points
-                    </h3>
-                    <p className="text-xl font-semibold text-green-600">
-                      {report2.dataPointsCount || 0}
-                    </p>
-                  </div>
-                </div>
-              </div>
             </div>
           </CardContent>
         </Card>
-      </div>
-    </div>
-  );
-}
-
-// Component for a comparison row
-function ComparisonRow({
-  label,
-  value1,
-  value2,
-  deviation,
-  formatValue = (val: number) => val?.toString(),
-  icon,
-  color1 = "blue",
-  color2 = "green",
-}: {
-  label: string;
-  value1: number;
-  value2: number;
-  deviation: number;
-  formatValue?: (val: number) => string;
-  icon?: React.ReactNode;
-  color1?: "blue" | "green" | "red" | "amber";
-  color2?: "blue" | "green" | "red" | "amber";
-}) {
-  // Determine if value1 is higher, lower, or same as value2
-  const getComparisonIndicator = () => {
-    if (Math.abs(deviation) < 0.001) return null;
-    if (value1 > value2) return <span className="text-red-500">↑</span>;
-    if (value1 < value2) return <span className="text-green-500">↓</span>;
-    return null;
-  };
-
-  // Determine background color for deviation based on its magnitude
-  const getDeviationClass = () => {
-    const absDeviation = Math.abs(deviation);
-    // Adjust these thresholds based on your data ranges
-    if (absDeviation > 10) return "bg-red-50";
-    if (absDeviation > 5) return "bg-amber-50";
-    if (absDeviation > 2) return "bg-yellow-50";
-    return "bg-green-50";
-  };
-
-  const textColorClasses = {
-    blue: "text-blue-600",
-    green: "text-green-600",
-    red: "text-red-600",
-    amber: "text-amber-600",
-  };
-
-  return (
-    <div className="grid grid-cols-3 gap-6 p-6 hover:bg-gray-50 transition-colors">
-      <div className="flex items-center">
-        <div className="mr-4 text-xl flex-shrink-0">{icon}</div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">{label}</h3>
-          <p className={`text-xl font-semibold ${textColorClasses[color1]}`}>
-            {formatValue(value1)}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center justify-center">
-        <div
-          className={`text-center px-4 py-2 rounded-full ${getDeviationClass()}`}
-        >
-          <h3 className="text-sm font-medium text-gray-500">Difference</h3>
-          <p className="text-xl font-semibold text-gray-700 flex items-center justify-center">
-            {formatValue(Math.abs(deviation))} {getComparisonIndicator()}
-          </p>
-        </div>
-      </div>
-
-      <div className="flex items-center">
-        <div className="mr-4 text-xl flex-shrink-0">{icon}</div>
-        <div>
-          <h3 className="text-sm font-medium text-gray-500">{label}</h3>
-          <p className={`text-xl font-semibold ${textColorClasses[color2]}`}>
-            {formatValue(value2)}
-          </p>
-        </div>
       </div>
     </div>
   );

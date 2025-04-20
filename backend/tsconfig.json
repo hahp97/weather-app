@@ -16,5 +16,6 @@
     "require": ["tsconfig-paths/register"],
     "swc": true
   },
-  "include": ["src/**/*.*"]
+  "include": ["src/**/*.*"],
+  "exclude": ["**/__tests__/**", "**/*.test.ts", "**/*.spec.ts", "jest", "jest.config.js"]
 }

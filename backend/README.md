@@ -296,3 +296,7 @@ The backend includes unit tests for:
 - Database services
 - Authentication logic
 - Background jobs
+
+## FRONTEND
+
+- [Frontend Documentation](./frontend/README.md)

@@ -265,3 +265,7 @@ The frontend includes:
 - Component tests using React Testing Library
 - Hook tests for custom React hooks
 - E2E tests with Playwright (optional)
+
+## BACKEND
+
+- [Backend Documentation](./backend/README.md)
